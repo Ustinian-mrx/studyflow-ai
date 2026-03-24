@@ -1,0 +1,76 @@
+import path from "path";
+import fs from "fs/promises";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getBearerTokenFromRequest, verifyToken } from "@/lib/jwt";
+import {
+ALLOWED_FILE_TYPES,
+MAX_FILE_SIZE,
+sanitizeFilename,
+ensureUploadDir,
+} from "@/lib/file";
+
+export async function POST(req: Request) {
+try {
+const token = getBearerTokenFromRequest(req);
+
+if (!token) {
+return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+const payload = verifyToken(token);
+
+if (!payload) {
+return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+}
+
+const formData = await req.formData();
+const file = formData.get("file");
+
+if (!(file instanceof File)) {
+return NextResponse.json({ error: "请上传文件" }, { status: 400 });
+}
+
+if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+return NextResponse.json(
+{ error: "仅支持 PDF、PNG、JPG、JPEG、WEBP" },
+{ status: 400 }
+);
+}
+
+if (file.size > MAX_FILE_SIZE) {
+return NextResponse.json(
+{ error: "文件不能超过 10MB" },
+{ status: 400 }
+);
+}
+
+const uploadDir = await ensureUploadDir();
+const safeFilename = sanitizeFilename(file.name);
+const savePath = path.join(uploadDir, safeFilename);
+
+const bytes = await file.arrayBuffer();
+await fs.writeFile(savePath, Buffer.from(bytes));
+
+const document = await prisma.document.create({
+data: {
+userId: payload.id,
+filename: file.name,
+fileUrl: `/uploads/${safeFilename}`,
+fileType: file.type,
+status: "uploading",
+},
+});
+
+return NextResponse.json({
+id: document.id,
+filename: document.filename,
+status: document.status,
+});
+} catch (error) {
+return NextResponse.json(
+{ error: (error as Error).message || "上传失败" },
+{ status: 500 }
+);
+}
+}

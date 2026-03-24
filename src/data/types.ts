@@ -28,6 +28,26 @@ export type HistoryItem = {
   status: StatusKey;
 };
 
+export type DashboardQuickItem = {
+  title: string;
+  href: string;
+};
+
+export type DashboardRecentUploadItem = HistoryItem;
+
+export type DashboardRecentOutputItem = {
+  id: number;
+  title: string;
+  value: string;
+  desc: string;
+};
+
+export type DashboardData = {
+  quick: DashboardQuickItem[];
+  recentUploads: DashboardRecentUploadItem[];
+  recentOutputs: DashboardRecentOutputItem[];
+};
+
 export type FlashcardItem = {
   id: number;
   question: string;

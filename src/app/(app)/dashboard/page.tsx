@@ -13,9 +13,8 @@ export default async function DashboardPage() {
         description="欢迎回来，今天想整理哪份资料？"
       />
 
-      {/* 快捷操作 */}
       <div className="grid gap-4 md:grid-cols-2">
-        {data.quick.map((item: { title: string; href: string }, index: number) => (
+        {data.quick.map((item, index) => (
           <Link
             key={item.href}
             href={item.href}
@@ -25,10 +24,10 @@ export default async function DashboardPage() {
                 index % 4 === 0
                   ? "bg-gradient-to-r from-slate-900 to-slate-700 text-white"
                   : index % 4 === 1
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-500 text-white"
-                  : index % 4 === 2
-                  ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white"
-                  : "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-500 text-white"
+                    : index % 4 === 2
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white"
+                      : "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
               }`}
           >
             {item.title}
@@ -37,10 +36,9 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* 最近上传记录 */}
       <SectionCard title="最近上传记录">
         <div className="space-y-3">
-          {data.recentUploads.map((item: { id: number; name: string; time: string; status: string }) => (
+          {data.recentUploads.map((item) => (
             <Link
               key={item.id}
               href={`/result/${item.id}`}
@@ -51,17 +49,16 @@ export default async function DashboardPage() {
                   <div className="text-sm font-medium">{item.name}</div>
                   <div className="text-xs text-slate-500">{item.time}</div>
                 </div>
-                <StatusBadge status={item.status as any} />
+                <StatusBadge status={item.status} />
               </div>
             </Link>
           ))}
         </div>
       </SectionCard>
 
-      {/* 最近生成内容 */}
       <SectionCard title="最近生成内容">
         <div className="grid gap-3 md:grid-cols-2">
-          {data.recentOutputs.map((item: { id: number; title: string; value: string; desc: string }) => (
+          {data.recentOutputs.map((item) => (
             <div key={item.id} className="rounded-md border p-4">
               <div className="text-sm text-slate-500">{item.title}</div>
               <div className="mt-1 text-xl font-semibold">{item.value}</div>

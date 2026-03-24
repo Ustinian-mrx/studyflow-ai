@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { removeToken } from "@/lib/auth";
 
 const titleMap: Record<string, string> = {
   "/dashboard": "控制台",
@@ -12,6 +13,7 @@ const titleMap: Record<string, string> = {
 
 export default function Topbar() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const title =
     titleMap[pathname] ||
@@ -20,8 +22,13 @@ export default function Topbar() {
     (pathname.startsWith("/summary") ? "总结" : "") ||
     "StudyFlow AI";
 
-  const handleLogout = () => {
-    alert("已点击退出（占位），后续接入真实登录逻辑");
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+    });
+    removeToken();
+    router.push("/login");
+    router.refresh();
   };
 
   return (

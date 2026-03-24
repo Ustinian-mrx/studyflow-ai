@@ -1,4 +1,5 @@
 import type {
+  DashboardData,
   FlashcardsData,
   HistoryItem,
   ProcessingStep,
@@ -8,11 +9,11 @@ import type {
   UploadOption,
 } from "./types";
 
-export const dashboardQuick = [
+export const dashboardQuick: DashboardData["quick"] = [
   { title: "上传资料", href: "/upload" },
   { title: "查看历史", href: "/history" },
   { title: "本周总结", href: "/summary/1" },
-  { title: "闪卡复习", href: "/flashcards/1" }, // 新增
+  { title: "闪卡复习", href: "/flashcards/1" },
 ];
 
 export const historyList: HistoryItem[] = [
@@ -98,12 +99,12 @@ export const profileData: ProfileData = {
   },
 };
 
-export const dashboardRecentUploads = [
+export const dashboardRecentUploads: DashboardData["recentUploads"] = [
   { id: 1, name: "高数极限.pdf", time: "2026-03-10 19:20", status: "done" },
   { id: 2, name: "英语阅读.pdf", time: "2026-03-09 21:10", status: "analyzing" },
 ];
 
-export const dashboardRecentOutputs = [
+export const dashboardRecentOutputs: DashboardData["recentOutputs"] = [
   { id: 1, title: "本周闪卡", value: "24 张", desc: "来自 3 份资料" },
   { id: 2, title: "本周总结", value: "1 篇", desc: "最近生成于 20:10" },
 ];

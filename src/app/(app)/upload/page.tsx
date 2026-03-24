@@ -1,61 +1,86 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
 import SectionCard from "@/components/SectionCard";
 import { Button } from "@/components/ui/button";
-import { getUploadOption } from "@/data/api";
-import type { StatusKey } from "@/lib/status";
-import { statusLabel } from "@/lib/status";
+import { getAuthHeaders } from "@/lib/auth";
 
-export default async function UploadPage() {
-  const currentStatus: StatusKey = "analyzing";
-  const uploadOption = await getUploadOption();
+export default function UploadPage() {
+const router = useRouter();
+const [file, setFile] = useState<File | null>(null);
+const [error, setError] = useState("");
+const [loading, setLoading] = useState(false);
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="上传资料"
-        description="支持图片和 PDF，上传后将自动生成分析、闪卡与总结。"
-      />
+async function handleUpload() {
+setError("");
 
-      <SectionCard title="上传区域">
-        <div className="text-slate-500">拖拽或点击上传文件</div>
-        <div className="mt-3 h-32 rounded-md border border-dashed bg-slate-50" />
-        <Button className="mt-4">选择文件</Button>
-      </SectionCard>
+if (!file) {
+setError("请先选择文件");
+return;
+}
 
-      <SectionCard title="附加选项">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div>
-            <label className="text-sm">学科</label>
-            <select className="mt-2 w-full rounded-md border px-3 py-2 text-sm">
-              <option>{uploadOption.subject}</option>
-              <option>英语</option>
-              <option>线性代数</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-sm">年级</label>
-            <select className="mt-2 w-full rounded-md border px-3 py-2 text-sm">
-              <option>{uploadOption.level}</option>
-              <option>大二</option>
-              <option>大三</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-sm">学习目标</label>
-            <input
-              className="mt-2 w-full rounded-md border px-3 py-2 text-sm"
-              defaultValue={uploadOption.goal}
-            />
-          </div>
-        </div>
-      </SectionCard>
+setLoading(true);
 
-      <SectionCard title="处理状态">
-        <div className="text-sm text-slate-500">当前状态：{statusLabel[currentStatus]}</div>
-        <div className="mt-3 h-2 w-full rounded-full bg-slate-100">
-          <div className="h-2 w-1/2 rounded-full bg-slate-900" />
-        </div>
-      </SectionCard>
-    </div>
-  );
+try {
+const formData = new FormData();
+formData.append("file", file);
+
+const res = await fetch("/api/documents/upload", {
+method: "POST",
+headers: {
+...getAuthHeaders(),
+},
+body: formData,
+});
+
+const data = await res.json();
+
+if (!res.ok) {
+setError(data.error || "上传失败");
+return;
+}
+
+router.push(`/result/${data.id}`);
+} catch {
+setError("网络异常，请稍后重试");
+} finally {
+setLoading(false);
+}
+}
+
+return (
+<div className="space-y-6">
+<PageHeader
+title="上传资料"
+description="支持 PDF 和图片，上传后将自动生成分析结果。"
+/>
+
+<SectionCard title="选择文件">
+<div className="space-y-4">
+<input
+type="file"
+accept=".pdf,image/png,image/jpeg,image/jpg,image/webp"
+onChange={(e) => {
+const selected = e.target.files?.[0] || null;
+setFile(selected);
+}}
+/>
+
+{file ? (
+<div className="text-sm text-slate-600">
+已选择：{file.name}（{Math.ceil(file.size / 1024)} KB）
+</div>
+) : null}
+
+{error ? <div className="text-sm text-red-500">{error}</div> : null}
+
+<Button onClick={handleUpload} disabled={loading}>
+{loading ? "上传中..." : "开始分析"}
+</Button>
+</div>
+</SectionCard>
+</div>
+);
 }

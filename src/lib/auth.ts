@@ -1,4 +1,6 @@
-const TOKEN_KEY = "studyflow_token";
+import { AUTH_COOKIE_NAME } from "@/lib/constants";
+
+const TOKEN_KEY = AUTH_COOKIE_NAME;
 
 export function getToken() {
 if (typeof window === "undefined") return null;

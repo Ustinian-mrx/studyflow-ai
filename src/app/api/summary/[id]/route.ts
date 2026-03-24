@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getBearerTokenFromRequest, verifyToken } from "@/lib/jwt";
 
 export async function GET(
-  _: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const token = getBearerTokenFromRequest(req);
+
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const payload = verifyToken(token);
+
+  if (!payload) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
+
   const { id } = await params;
   const summaryId = Number(id);
 
@@ -12,8 +25,8 @@ export async function GET(
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
-  const summary = await prisma.summary.findUnique({
-    where: { id: summaryId },
+  const summary = await prisma.summary.findFirst({
+    where: { id: summaryId, userId: payload.id },
   });
 
   if (!summary) {
@@ -26,8 +39,8 @@ export async function GET(
     title: summary.title,
     period: summary.period,
     content: summary.content,
-    keyPoints: summary.keyPoints,
-    suggestions: summary.suggestions,
-    generatedAt: summary.createdAt,
+    keyPoints: Array.isArray(summary.keyPoints) ? summary.keyPoints : [],
+    suggestions: Array.isArray(summary.suggestions) ? summary.suggestions : [],
+    generatedAt: summary.createdAt.toISOString(),
   });
 }

@@ -26,12 +26,12 @@ export default async function HistoryPage() {
           />
         ) : (
           <div className="space-y-3">
-            {historyList.map((item: { id: number; name: string; time: string; status: string }) => (
+            {historyList.map((item) => (
               <ListItem
                 key={item.id}
                 title={item.name}
                 subtitle={item.time}
-                right={<StatusBadge status={item.status as any} />}
+                right={<StatusBadge status={item.status} />}
                 href={`/result/${item.id}`}
               />
             ))}

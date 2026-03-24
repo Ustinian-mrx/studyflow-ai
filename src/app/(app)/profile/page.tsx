@@ -42,7 +42,7 @@ export default async function ProfilePage() {
 
       <SectionCard title="学习标签">
         <div className="flex flex-wrap gap-2 text-sm text-slate-600">
-          {data.tags.map((tag) => (
+          {data.tags.map((tag: string) => (
             <span key={tag} className="rounded-full border px-3 py-1">
               {tag}
             </span>
@@ -51,7 +51,7 @@ export default async function ProfilePage() {
       </SectionCard>
 
       <SectionCard title="账号操作">
-        <div className="text-sm text-slate-500">退出登录（占位）</div>
+        <div className="text-sm text-slate-500">可在右上角菜单中退出登录。</div>
       </SectionCard>
     </div>
   );

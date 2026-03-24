@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import {
   dashboardQuick,
   dashboardRecentUploads,
@@ -9,10 +10,32 @@ import {
   profileData,
   historyList,
 } from "./mock";
+import type {
+  DashboardData,
+  FlashcardsData,
+  HistoryItem,
+  ProfileData,
+  ResultData,
+  SummaryData,
+} from "./types";
+import { AUTH_COOKIE_NAME } from "@/lib/constants";
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-export async function getDashboardData() {
+async function getAuthHeaders() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+
+  if (!token) {
+    return undefined;
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+}
+
+export async function getDashboardData(): Promise<DashboardData> {
   return {
     quick: dashboardQuick,
     recentUploads: dashboardRecentUploads,
@@ -20,9 +43,16 @@ export async function getDashboardData() {
   };
 }
 
-export async function getHistoryList() {
+export async function getHistoryList(): Promise<HistoryItem[]> {
+  const headers = await getAuthHeaders();
+
+  if (!headers) {
+    return historyList;
+  }
+
   const res = await fetch(`${BASE_URL}/api/history`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
@@ -32,9 +62,11 @@ export async function getHistoryList() {
   return res.json();
 }
 
-export async function getResultData(id: string) {
+export async function getResultData(id: string): Promise<ResultData> {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${BASE_URL}/api/result/${id}`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
@@ -56,9 +88,11 @@ export async function getResultData(id: string) {
   return res.json();
 }
 
-export async function getFlashcardsData(id: string) {
+export async function getFlashcardsData(id: string): Promise<FlashcardsData> {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${BASE_URL}/api/flashcards/${id}`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
@@ -71,9 +105,11 @@ export async function getFlashcardsData(id: string) {
   return res.json();
 }
 
-export async function getSummaryData(id: string) {
+export async function getSummaryData(id: string): Promise<SummaryData> {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${BASE_URL}/api/summary/${id}`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
@@ -86,9 +122,16 @@ export async function getSummaryData(id: string) {
   return res.json();
 }
 
-export async function getProfileData() {
+export async function getProfileData(): Promise<ProfileData> {
+  const headers = await getAuthHeaders();
+
+  if (!headers) {
+    return profileData;
+  }
+
   const res = await fetch(`${BASE_URL}/api/profile`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
