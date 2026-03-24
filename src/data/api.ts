@@ -43,20 +43,13 @@ export async function getDashboardData(): Promise<DashboardData> {
   };
 }
 
-export async function getHistoryList(): Promise<HistoryItem[]> {
-  const headers = await getAuthHeaders();
-
-  if (!headers) {
-    return historyList;
-  }
-
+export async function getHistoryList() {
   const res = await fetch(`${BASE_URL}/api/history`, {
     cache: "no-store",
-    headers,
   });
 
   if (!res.ok) {
-    return historyList;
+    return [];
   }
 
   return res.json();
