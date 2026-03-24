@@ -20,14 +20,13 @@ export default async function DashboardPage() {
             href={item.href}
             className={`rounded-xl border p-6 h-28 flex items-center justify-between
               text-lg font-semibold transition hover:scale-[1.02] hover:shadow-lg
-              ${
-                index % 4 === 0
-                  ? "bg-gradient-to-r from-slate-900 to-slate-700 text-white"
-                  : index % 4 === 1
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-500 text-white"
-                    : index % 4 === 2
-                      ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white"
-                      : "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+              ${index % 4 === 0
+                ? "bg-gradient-to-r from-slate-900 to-slate-700 text-white"
+                : index % 4 === 1
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-500 text-white"
+                  : index % 4 === 2
+                    ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white"
+                    : "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
               }`}
           >
             {item.title}

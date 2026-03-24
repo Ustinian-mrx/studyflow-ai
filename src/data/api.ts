@@ -62,15 +62,14 @@ export async function getHistoryList(): Promise<HistoryItem[]> {
   return res.json();
 }
 
-export async function getResultData(id: string): Promise<ResultData> {
-  const headers = await getAuthHeaders();
+export async function getResultData(id: string) {
   const res = await fetch(`${BASE_URL}/api/result/${id}`, {
     cache: "no-store",
-    headers,
   });
 
   if (!res.ok) {
     const text = await res.text();
+
     return {
       id: Number(id) || 0,
       filename: "未知文件",

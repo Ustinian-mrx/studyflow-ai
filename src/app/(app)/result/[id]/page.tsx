@@ -15,6 +15,7 @@ export default async function ResultPage({ params }: Props) {
   const { id } = await params;
   const data = await getResultData(id);
   const processingSteps = await getProcessingSteps();
+
   const isProcessing = ["uploading", "extracting", "analyzing"].includes(data.status);
   const isFailed = data.status === "failed";
   const isDone = data.status === "done";
@@ -43,15 +44,15 @@ export default async function ResultPage({ params }: Props) {
                 {statusLabel[data.status]}
               </span>
             </div>
+
             <ul className="space-y-2">
               {processingSteps.map((step) => {
                 const active = step.key === data.status;
                 return (
                   <li key={step.key} className="flex items-center gap-2">
                     <span
-                      className={`h-2 w-2 rounded-full ${
-                        active ? "bg-slate-900" : "bg-slate-300"
-                      }`}
+                      className={`h-2 w-2 rounded-full ${active ? "bg-slate-900" : "bg-slate-300"
+                        }`}
                     />
                     <span className={active ? "text-slate-900" : "text-slate-500"}>
                       {step.label}
@@ -68,7 +69,7 @@ export default async function ResultPage({ params }: Props) {
         <SectionCard title="处理失败">
           <EmptyState
             title="解析失败"
-            description={data.errorMessage ?? "请稍后重试。"}
+            description={data.errorMessage || "请稍后重试。"}
             action={
               <Button size="sm" variant="outline" disabled>
                 重新尝试
@@ -113,17 +114,19 @@ export default async function ResultPage({ params }: Props) {
             </ul>
           </SectionCard>
 
-          <SectionCard title="标签">{data.tags.join(" / ")}</SectionCard>
+          <SectionCard title="标签">
+            {data.tags.length ? data.tags.join(" / ") : "暂无标签"}
+          </SectionCard>
         </>
       )}
 
       <SectionCard title="操作区">
         <div className="flex gap-3">
           <Button asChild>
-            <Link href="/flashcards/1">查看闪卡</Link>
+            <Link href={`/flashcards/${data.id}`}>查看闪卡</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/summary/1">查看总结</Link>
+            <Link href={`/summary/${data.id}`}>查看总结</Link>
           </Button>
           <Button asChild variant="ghost">
             <Link href="/history">返回历史</Link>
