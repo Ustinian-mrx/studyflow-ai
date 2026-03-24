@@ -1,9 +1,8 @@
-import path from "path";
-import fs from "fs/promises";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { processDocumentAnalysis } from "@/lib/services/document-analysis";
 
-export async function DELETE(
+export async function POST(
   _: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -24,7 +23,7 @@ export async function DELETE(
     });
 
     if (!document) {
-      return NextResponse.json({ error: "记录不存在" }, { status: 404 });
+      return NextResponse.json({ error: "文档不存在" }, { status: 404 });
     }
 
     await prisma.flashcard.deleteMany({
@@ -43,29 +42,24 @@ export async function DELETE(
       },
     });
 
-    await prisma.document.delete({
+    await prisma.document.update({
       where: { id: documentId },
+      data: {
+        status: "uploading",
+        errorMessage: null,
+      },
     });
 
-    if (document.fileUrl?.startsWith("/uploads/")) {
-      const filePath = path.join(
-        process.cwd(),
-        "public",
-        document.fileUrl.replace(/^\/+/, "")
-      );
+    await processDocumentAnalysis(documentId);
 
-      try {
-        await fs.unlink(filePath);
-      } catch {
-        // 文件不存在也不阻塞删除流程
-      }
-    }
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      message: "已重新触发分析",
+    });
   } catch (error) {
     return NextResponse.json(
       {
-        error: (error as Error).message || "删除失败",
+        error: (error as Error).message || "重试分析失败",
       },
       { status: 500 }
     );

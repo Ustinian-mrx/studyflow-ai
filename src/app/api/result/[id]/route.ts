@@ -1,46 +1,84 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserFromRequest } from "@/lib/server-auth";
 
 export async function GET(
-    _: Request,
+    req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params;
-        const docId = Number(id);
+        const user = await getCurrentUserFromRequest(req);
 
-        if (Number.isNaN(docId)) {
-            return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const doc = await prisma.document.findUnique({
-            where: { id: docId },
-            include: { result: true },
+        const { id } = await params;
+        const documentId = Number(id);
+
+        if (Number.isNaN(documentId)) {
+            return NextResponse.json({ error: "无效的文档 id" }, { status: 400 });
+        }
+
+        const document = await prisma.document.findFirst({
+            where: {
+                id: documentId,
+                userId: user.id,
+            },
+            select: {
+                id: true,
+                filename: true,
+                uploadedAt: true,
+                status: true,
+                errorMessage: true,
+            },
         });
 
-        if (!doc) {
-            return NextResponse.json({ error: "Not found" }, { status: 404 });
+        if (!document) {
+            return NextResponse.json(
+                { error: "文档不存在或无权访问" },
+                { status: 404 }
+            );
         }
 
+        const analysisResult = await prisma.analysisResult.findUnique({
+            where: {
+                documentId: document.id,
+            },
+            select: {
+                summary: true,
+                keyPoints: true,
+                difficulties: true,
+                suggestions: true,
+                tags: true,
+            },
+        });
+
         return NextResponse.json({
-            id: doc.id,
-            filename: doc.filename,
-            uploadedAt: doc.uploadedAt.toISOString(),
-            status: doc.status,
-            summary: doc.result?.summary ?? "",
-            keyPoints: Array.isArray(doc.result?.keyPoints) ? doc.result?.keyPoints : [],
-            difficulties: Array.isArray(doc.result?.difficulties)
-                ? doc.result?.difficulties
+            id: document.id,
+            filename: document.filename,
+            uploadedAt: document.uploadedAt.toISOString().slice(0, 16).replace("T", " "),
+            status: document.status,
+            summary: analysisResult?.summary ?? "",
+            keyPoints: Array.isArray(analysisResult?.keyPoints)
+                ? analysisResult.keyPoints.map(String)
                 : [],
-            suggestions: Array.isArray(doc.result?.suggestions)
-                ? doc.result?.suggestions
+            difficulties: Array.isArray(analysisResult?.difficulties)
+                ? analysisResult.difficulties.map(String)
                 : [],
-            tags: Array.isArray(doc.result?.tags) ? doc.result?.tags : [],
-            errorMessage: doc.errorMessage ?? "",
+            suggestions: Array.isArray(analysisResult?.suggestions)
+                ? analysisResult.suggestions.map(String)
+                : [],
+            tags: Array.isArray(analysisResult?.tags)
+                ? analysisResult.tags.map(String)
+                : [],
+            errorMessage: document.errorMessage ?? "",
         });
     } catch (error) {
         return NextResponse.json(
-            { error: (error as Error).message || "服务器错误" },
+            {
+                error: (error as Error).message || "获取分析结果失败",
+            },
             { status: 500 }
         );
     }

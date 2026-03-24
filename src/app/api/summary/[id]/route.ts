@@ -1,46 +1,70 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getBearerTokenFromRequest, verifyToken } from "@/lib/jwt";
 
 export async function GET(
-  req: Request,
+  _: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const token = getBearerTokenFromRequest(req);
+  try {
+    const { id } = await params;
+    const documentId = Number(id);
 
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (Number.isNaN(documentId)) {
+      return NextResponse.json({ error: "无效的文档 id" }, { status: 400 });
+    }
+
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      return NextResponse.json({ error: "文档不存在" }, { status: 404 });
+    }
+
+    const summary = await prisma.summary.findFirst({
+      where: {
+        userId: document.userId,
+        type: "single",
+        title: `${document.filename} - 单篇总结`,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    if (!summary) {
+      return NextResponse.json({
+        id: document.id,
+        type: "single",
+        title: `${document.filename} - 单篇总结`,
+        period: "",
+        content: "",
+        keyPoints: [],
+        suggestions: [],
+        generatedAt: "",
+      });
+    }
+
+    return NextResponse.json({
+      id: document.id,
+      type: summary.type,
+      title: summary.title,
+      period: summary.period,
+      content: summary.content,
+      keyPoints: Array.isArray(summary.keyPoints)
+        ? summary.keyPoints.map(String)
+        : [],
+      suggestions: Array.isArray(summary.suggestions)
+        ? summary.suggestions.map(String)
+        : [],
+      generatedAt: summary.createdAt.toISOString(),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: (error as Error).message || "获取总结失败",
+      },
+      { status: 500 }
+    );
   }
-
-  const payload = verifyToken(token);
-
-  if (!payload) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-
-  const { id } = await params;
-  const summaryId = Number(id);
-
-  if (Number.isNaN(summaryId)) {
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  }
-
-  const summary = await prisma.summary.findFirst({
-    where: { id: summaryId, userId: payload.id },
-  });
-
-  if (!summary) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({
-    id: summary.id,
-    type: summary.type,
-    title: summary.title,
-    period: summary.period,
-    content: summary.content,
-    keyPoints: Array.isArray(summary.keyPoints) ? summary.keyPoints : [],
-    suggestions: Array.isArray(summary.suggestions) ? summary.suggestions : [],
-    generatedAt: summary.createdAt.toISOString(),
-  });
 }

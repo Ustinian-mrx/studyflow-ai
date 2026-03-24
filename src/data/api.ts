@@ -35,14 +35,24 @@ async function getAuthHeaders() {
   };
 }
 
-export async function getDashboardData(): Promise<DashboardData> {
-  return {
-    quick: dashboardQuick,
-    recentUploads: dashboardRecentUploads,
-    recentOutputs: dashboardRecentOutputs,
-  };
-}
+export async function getDashboardData() {
+  const res = await fetch(`${BASE_URL}/api/dashboard`, {
+    cache: "no-store",
+  });
 
+  if (!res.ok) {
+    return {
+      quick: [
+        { title: "上传资料", href: "/upload" },
+        { title: "查看历史", href: "/history" },
+      ],
+      recentUploads: [],
+      recentOutputs: [],
+    };
+  }
+
+  return res.json();
+}
 export async function getHistoryList() {
   const res = await fetch(`${BASE_URL}/api/history`, {
     cache: "no-store",
@@ -80,34 +90,40 @@ export async function getResultData(id: string) {
   return res.json();
 }
 
-export async function getFlashcardsData(id: string): Promise<FlashcardsData> {
-  const headers = await getAuthHeaders();
+export async function getFlashcardsData(id: string) {
   const res = await fetch(`${BASE_URL}/api/flashcards/${id}`, {
     cache: "no-store",
-    headers,
   });
 
   if (!res.ok) {
     return {
-      ...flashcardsData,
-      id: Number(id) || flashcardsData.id,
+      id: Number(id) || 0,
+      documentName: "未知文档",
+      total: 0,
+      categories: 0,
+      tags: [],
+      items: [],
     };
   }
 
   return res.json();
 }
 
-export async function getSummaryData(id: string): Promise<SummaryData> {
-  const headers = await getAuthHeaders();
+export async function getSummaryData(id: string) {
   const res = await fetch(`${BASE_URL}/api/summary/${id}`, {
     cache: "no-store",
-    headers,
   });
 
   if (!res.ok) {
     return {
-      ...summaryData,
-      id: Number(id) || summaryData.id,
+      id: Number(id) || 0,
+      type: "single",
+      title: "暂无总结",
+      period: "",
+      content: "",
+      keyPoints: [],
+      suggestions: [],
+      generatedAt: "",
     };
   }
 

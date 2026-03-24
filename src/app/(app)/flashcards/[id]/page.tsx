@@ -22,7 +22,10 @@ export default async function FlashcardsPage({ params }: Props) {
       </SectionCard>
 
       <SectionCard title="闪卡统计">
-        共 {data.total} 张 · {data.categories} 个分类 · 标签：{data.tags.join(" / ")}
+        <div className="text-sm text-slate-600">
+          共 {data.total} 张 · {data.categories} 个分类
+          {data.tags.length ? ` · 标签：${data.tags.join(" / ")}` : ""}
+        </div>
       </SectionCard>
 
       <SectionCard title="闪卡列表">
@@ -30,17 +33,36 @@ export default async function FlashcardsPage({ params }: Props) {
           <EmptyState title="暂无闪卡" description="生成后会在这里展示。" />
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {data.items.map((item: { id: number; question: string; answer: string; tags?: string[] }) => (
-              <div key={item.id} className="rounded-md border p-4">
-                <div className="text-sm font-medium">Q：{item.question}</div>
-                <div className="mt-2 text-sm text-slate-500">A：{item.answer}</div>
-                {item.tags?.length ? (
-                  <div className="mt-3 text-xs text-slate-400">
-                    标签：{item.tags.join(" / ")}
+            {data.items.map(
+              (item: {
+                id: number;
+                question: string;
+                answer: string;
+                tags?: string[];
+              }) => (
+                <div key={item.id} className="rounded-md border p-4 space-y-3">
+                  <div>
+                    <div className="text-xs text-slate-400">问题</div>
+                    <div className="mt-1 text-sm font-medium text-slate-900">
+                      {item.question}
+                    </div>
                   </div>
-                ) : null}
-              </div>
-            ))}
+
+                  <div>
+                    <div className="text-xs text-slate-400">答案</div>
+                    <div className="mt-1 text-sm text-slate-600">
+                      {item.answer}
+                    </div>
+                  </div>
+
+                  {item.tags?.length ? (
+                    <div className="text-xs text-slate-400">
+                      标签：{item.tags.join(" / ")}
+                    </div>
+                  ) : null}
+                </div>
+              )
+            )}
           </div>
         )}
       </SectionCard>
@@ -48,10 +70,13 @@ export default async function FlashcardsPage({ params }: Props) {
       <SectionCard title="操作区">
         <div className="flex gap-3">
           <Button asChild variant="outline">
-            <Link href="/result/1">返回分析结果</Link>
+            <Link href={`/result/${data.id}`}>返回分析结果</Link>
           </Button>
           <Button asChild>
-            <Link href="/summary/1">查看总结</Link>
+            <Link href={`/summary/${data.id}`}>查看总结</Link>
+          </Button>
+          <Button asChild variant="ghost">
+            <Link href="/history">返回历史</Link>
           </Button>
         </div>
       </SectionCard>

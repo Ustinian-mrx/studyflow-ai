@@ -1,60 +1,82 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { removeToken } from "@/lib/auth";
 
-const titleMap: Record<string, string> = {
-  "/dashboard": "控制台",
-  "/upload": "上传资料",
-  "/history": "历史记录",
-  "/profile": "个人中心",
+type TopbarProps = {
+  userName?: string;
 };
 
-export default function Topbar() {
-  const pathname = usePathname();
+export default function Topbar({ userName = "用户" }: TopbarProps) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
-  const title =
-    titleMap[pathname] ||
-    (pathname.startsWith("/result") ? "分析结果" : "") ||
-    (pathname.startsWith("/flashcards") ? "闪卡" : "") ||
-    (pathname.startsWith("/summary") ? "总结" : "") ||
-    "StudyFlow AI";
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+    } catch {
+      // 即使接口失败，也继续清本地并跳转
+    }
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-    });
     removeToken();
     router.push("/login");
     router.refresh();
-  };
+  }
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (!menuRef.current) return;
+
+      if (!menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
-    <header className="h-14 border-b bg-white px-6 flex items-center justify-between">
-      <div className="text-sm text-slate-500">{title}</div>
+    <header className="flex items-center justify-between border-b bg-white px-6 py-4">
+      <div className="text-lg font-semibold text-slate-900">StudyFlow AI</div>
 
-      <div className="relative group">
-        <button className="flex items-center gap-2 rounded-full border px-3 py-1 text-sm hover:bg-slate-50">
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs">
-            夏
-          </span>
-          <span>用户名</span>
-          <span className="text-slate-400">▼</span>
-        </button>
+      <div className="relative" ref={menuRef}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setOpen((prev) => !prev)}
+        >
+          {userName}
+        </Button>
 
-        <div className="absolute right-0 mt-2 hidden w-36 rounded-md border bg-white shadow-sm group-hover:block">
-          <Link href="/profile" className="block px-3 py-2 text-sm hover:bg-slate-50">
-            个人中心
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
-          >
-            退出登录
-          </button>
-        </div>
+        {open ? (
+          <div className="absolute right-0 mt-2 w-40 rounded-md border bg-white shadow-lg z-50">
+            <Link
+              href="/profile"
+              className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+              onClick={() => setOpen(false)}
+            >
+              个人中心
+            </Link>
+
+            <button
+              type="button"
+              className="block w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+              onClick={handleLogout}
+            >
+              退出登录
+            </button>
+          </div>
+        ) : null}
       </div>
     </header>
   );

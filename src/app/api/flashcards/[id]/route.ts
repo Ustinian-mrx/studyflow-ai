@@ -1,61 +1,64 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getBearerTokenFromRequest, verifyToken } from "@/lib/jwt";
 
 export async function GET(
-  req: Request,
+  _: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const token = getBearerTokenFromRequest(req);
+  try {
+    const { id } = await params;
+    const documentId = Number(id);
 
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (Number.isNaN(documentId)) {
+      return NextResponse.json({ error: "无效的文档 id" }, { status: 400 });
+    }
+
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      return NextResponse.json({ error: "文档不存在" }, { status: 404 });
+    }
+
+    const flashcards = await prisma.flashcard.findMany({
+      where: { documentId },
+      orderBy: { id: "asc" },
+      select: {
+        id: true,
+        question: true,
+        answer: true,
+        tags: true,
+      },
+    });
+
+    const mergedTags = Array.from(
+      new Set(
+        flashcards.flatMap((item) =>
+          Array.isArray(item.tags) ? item.tags.map(String) : []
+        )
+      )
+    );
+
+    return NextResponse.json({
+      id: document.id,
+      documentName: document.filename,
+      total: flashcards.length,
+      categories: mergedTags.length,
+      tags: mergedTags,
+      items: flashcards.map((item) => ({
+        id: item.id,
+        question: item.question,
+        answer: item.answer,
+        tags: Array.isArray(item.tags) ? item.tags.map(String) : [],
+      })),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: (error as Error).message || "获取闪卡失败",
+      },
+      { status: 500 }
+    );
   }
-
-  const payload = verifyToken(token);
-
-  if (!payload) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-
-  const { id } = await params;
-  const docId = Number(id);
-
-  if (Number.isNaN(docId)) {
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  }
-
-  const doc = await prisma.document.findFirst({
-    where: { id: docId, userId: payload.id },
-  });
-
-  if (!doc) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  const list = await prisma.flashcard.findMany({
-    where: { documentId: docId },
-    select: {
-      id: true,
-      question: true,
-      answer: true,
-      tags: true,
-    },
-  });
-
-  const allTags = list.flatMap((c) => (Array.isArray(c.tags) ? c.tags : []));
-
-  return NextResponse.json({
-    id: doc.id,
-    documentName: doc.filename,
-    total: list.length,
-    categories: new Set(allTags).size,
-    tags: Array.from(new Set(allTags)),
-    items: list.map((c) => ({
-      id: c.id,
-      question: c.question,
-      answer: c.answer,
-      tags: Array.isArray(c.tags) ? c.tags : [],
-    })),
-  });
 }

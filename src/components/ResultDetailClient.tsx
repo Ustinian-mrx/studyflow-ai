@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import SectionCard from "@/components/SectionCard";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { statusLabel, type StatusKey } from "@/lib/status";
 
@@ -33,6 +33,12 @@ type Props = {
     processingSteps: ProcessingStep[];
 };
 
+const PROCESSING_STATUSES: StatusKey[] = [
+    "uploading",
+    "extracting",
+    "analyzing",
+];
+
 export default function ResultDetailClient({
     id,
     initialData,
@@ -40,52 +46,82 @@ export default function ResultDetailClient({
 }: Props) {
     const [data, setData] = useState<ResultData | null>(initialData ?? null);
     const [loading, setLoading] = useState(!initialData);
-    const [lastUpdatedAt, setLastUpdatedAt] = useState<string>("");
+    const [lastUpdatedAt, setLastUpdatedAt] = useState("");
     const [isPolling, setIsPolling] = useState(false);
+    const [retryLoading, setRetryLoading] = useState(false);
+
+    async function fetchResult() {
+        const res = await fetch(`/api/result/${id}`, {
+            cache: "no-store",
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) {
+            throw new Error(json.error || "加载失败");
+        }
+
+        const nextData: ResultData = {
+            id: json.id,
+            filename: json.filename,
+            uploadedAt: json.uploadedAt,
+            status: json.status,
+            summary: json.summary ?? "",
+            keyPoints: Array.isArray(json.keyPoints) ? json.keyPoints : [],
+            difficulties: Array.isArray(json.difficulties) ? json.difficulties : [],
+            suggestions: Array.isArray(json.suggestions) ? json.suggestions : [],
+            tags: Array.isArray(json.tags) ? json.tags : [],
+            errorMessage: json.errorMessage,
+        };
+
+        setData(nextData);
+        setLastUpdatedAt(new Date().toLocaleTimeString());
+
+        const shouldPoll = PROCESSING_STATUSES.includes(nextData.status);
+        setIsPolling(shouldPoll);
+
+        return nextData;
+    }
+
+    async function handleRetry() {
+        setRetryLoading(true);
+
+        try {
+            const res = await fetch(`/api/documents/${id}/retry`, {
+                method: "POST",
+            });
+
+            const json = await res.json();
+
+            if (!res.ok) {
+                alert(json.error || "重试失败");
+                return;
+            }
+
+            const refreshed = await fetchResult();
+            setIsPolling(PROCESSING_STATUSES.includes(refreshed.status));
+        } catch (error) {
+            alert(error instanceof Error ? error.message : "网络异常，请稍后重试");
+        } finally {
+            setRetryLoading(false);
+        }
+    }
 
     useEffect(() => {
         let timer: NodeJS.Timeout | null = null;
         let stopped = false;
 
-        async function fetchResult() {
+        async function run() {
             try {
-                const res = await fetch(`/api/result/${id}`, {
-                    cache: "no-store",
-                });
+                const nextData = await fetchResult();
 
-                const json = await res.json();
-
-                if (!res.ok) {
-                    setData({
-                        id: Number(id) || 0,
-                        filename: "未知文件",
-                        uploadedAt: "",
-                        status: "failed",
-                        summary: "",
-                        keyPoints: [],
-                        difficulties: [],
-                        suggestions: [],
-                        tags: [],
-                        errorMessage: json.error || "加载失败",
-                    });
-                    setIsPolling(false);
-                    setLastUpdatedAt(new Date().toLocaleTimeString());
-                    return;
+                if (
+                    PROCESSING_STATUSES.includes(nextData.status) &&
+                    !stopped
+                ) {
+                    timer = setTimeout(run, 2000);
                 }
-
-                setData(json);
-                setLastUpdatedAt(new Date().toLocaleTimeString());
-
-                const shouldPoll = ["uploading", "extracting", "analyzing"].includes(
-                    json.status
-                );
-
-                setIsPolling(shouldPoll);
-
-                if (shouldPoll && !stopped) {
-                    timer = setTimeout(fetchResult, 2000);
-                }
-            } catch {
+            } catch (error) {
                 setData({
                     id: Number(id) || 0,
                     filename: "未知文件",
@@ -96,7 +132,8 @@ export default function ResultDetailClient({
                     difficulties: [],
                     suggestions: [],
                     tags: [],
-                    errorMessage: "网络异常，请稍后重试",
+                    errorMessage:
+                        error instanceof Error ? error.message : "网络异常，请稍后重试",
                 });
                 setIsPolling(false);
                 setLastUpdatedAt(new Date().toLocaleTimeString());
@@ -105,7 +142,7 @@ export default function ResultDetailClient({
             }
         }
 
-        fetchResult();
+        run();
 
         return () => {
             stopped = true;
@@ -124,9 +161,7 @@ export default function ResultDetailClient({
         );
     }
 
-    const isProcessing = ["uploading", "extracting", "analyzing"].includes(
-        data.status
-    );
+    const isProcessing = PROCESSING_STATUSES.includes(data.status);
     const isFailed = data.status === "failed";
     const isDone = data.status === "done";
 
@@ -139,7 +174,7 @@ export default function ResultDetailClient({
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                         <span>{data.filename}</span>
                         <span className="text-slate-400">·</span>
-                        <span>{String(data.uploadedAt)}</span>
+                        <span>{data.uploadedAt || "暂无时间"}</span>
                         <span className="text-slate-400">·</span>
                         <span>当前状态：</span>
                         <StatusBadge status={data.status} />
@@ -165,6 +200,7 @@ export default function ResultDetailClient({
                         <ul className="space-y-2">
                             {processingSteps.map((step) => {
                                 const active = step.key === data.status;
+
                                 return (
                                     <li key={step.key} className="flex items-center gap-2">
                                         <span
@@ -190,8 +226,13 @@ export default function ResultDetailClient({
                         title="解析失败"
                         description={data.errorMessage || "请稍后重试。"}
                         action={
-                            <Button size="sm" variant="outline" disabled>
-                                重新尝试
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleRetry}
+                                disabled={retryLoading}
+                            >
+                                {retryLoading ? "重试中..." : "重新尝试"}
                             </Button>
                         }
                     />
@@ -207,40 +248,69 @@ export default function ResultDetailClient({
                 </SectionCard>
             ) : (
                 <>
-                    <SectionCard title="摘要">{data.summary}</SectionCard>
+                    <SectionCard title="摘要">
+                        <div className="text-sm leading-7 text-slate-700">
+                            {data.summary || "暂无摘要"}
+                        </div>
+                    </SectionCard>
 
                     <SectionCard title="知识点">
-                        <ul className="list-disc pl-5">
-                            {data.keyPoints.map((item) => (
-                                <li key={item}>{item}</li>
-                            ))}
-                        </ul>
+                        {data.keyPoints.length === 0 ? (
+                            <div className="text-sm text-slate-500">暂无知识点</div>
+                        ) : (
+                            <ul className="list-disc pl-5 space-y-2 text-sm text-slate-700">
+                                {data.keyPoints.map((item) => (
+                                    <li key={item}>{item}</li>
+                                ))}
+                            </ul>
+                        )}
                     </SectionCard>
 
                     <SectionCard title="疑难点">
-                        <ul className="list-disc pl-5">
-                            {data.difficulties.map((item) => (
-                                <li key={item}>{item}</li>
-                            ))}
-                        </ul>
+                        {data.difficulties.length === 0 ? (
+                            <div className="text-sm text-slate-500">暂无疑难点</div>
+                        ) : (
+                            <ul className="list-disc pl-5 space-y-2 text-sm text-slate-700">
+                                {data.difficulties.map((item) => (
+                                    <li key={item}>{item}</li>
+                                ))}
+                            </ul>
+                        )}
                     </SectionCard>
 
                     <SectionCard title="学习建议">
-                        <ul className="list-disc pl-5">
-                            {data.suggestions.map((item) => (
-                                <li key={item}>{item}</li>
-                            ))}
-                        </ul>
+                        {data.suggestions.length === 0 ? (
+                            <div className="text-sm text-slate-500">暂无学习建议</div>
+                        ) : (
+                            <ul className="list-disc pl-5 space-y-2 text-sm text-slate-700">
+                                {data.suggestions.map((item) => (
+                                    <li key={item}>{item}</li>
+                                ))}
+                            </ul>
+                        )}
                     </SectionCard>
 
                     <SectionCard title="标签">
-                        {data.tags.length ? data.tags.join(" / ") : "暂无标签"}
+                        {data.tags.length === 0 ? (
+                            <div className="text-sm text-slate-500">暂无标签</div>
+                        ) : (
+                            <div className="flex flex-wrap gap-2">
+                                {data.tags.map((tag) => (
+                                    <span
+                                        key={tag}
+                                        className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600"
+                                    >
+                                        {tag}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </SectionCard>
                 </>
             )}
 
             <SectionCard title="操作区">
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                     <Button asChild>
                         <Link href={`/flashcards/${data.id}`}>查看闪卡</Link>
                     </Button>
