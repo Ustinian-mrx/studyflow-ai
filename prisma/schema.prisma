@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum DocumentStatus {
+uploading
+extracting
+analyzing
+done
+failed
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  name      String
+  role      String
+  createdAt DateTime  @default(now())
+
+  documents Document[]
+  summaries Summary[]
+}
+
+model Document {
+id Int @id @default(autoincrement())
+userId Int
+filename String
+fileUrl String
+fileType String?
+status DocumentStatus @default(uploading)
+extractedText String? @db.LongText
+errorMessage String? @db.Text
+uploadedAt DateTime @default(now())
+
+user User @relation(fields: [userId], references: [id])
+result AnalysisResult?
+flashcards Flashcard[]
+}
+
+model AnalysisResult {
+  id           Int      @id @default(autoincrement())
+  documentId   Int      @unique
+  summary      String
+  keyPoints    Json
+  difficulties Json
+  suggestions  Json
+  tags         Json
+  createdAt    DateTime @default(now())
+
+  document     Document @relation(fields: [documentId], references: [id])
+}
+
+model Flashcard {
+  id         Int    @id @default(autoincrement())
+  documentId Int
+  question   String
+  answer     String
+  tags       Json?
+
+  document   Document @relation(fields: [documentId], references: [id])
+}
+
+model Summary {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  type       String
+  title      String
+  period     String
+  content    String
+  keyPoints  Json
+  suggestions Json
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+}
