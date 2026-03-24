@@ -8,10 +8,10 @@ import {
     sanitizeFilename,
     ensureUploadDir,
 } from "@/lib/file";
+import { processDocumentAnalysis } from "@/lib/services/document-analysis";
 
 export async function POST(req: Request) {
     try {
-        // 当前阶段先用固定用户，后面再替换成真实登录用户
         const mockUserId = 1;
 
         const formData = await req.formData();
@@ -51,6 +51,8 @@ export async function POST(req: Request) {
                 status: "uploading",
             },
         });
+
+        void processDocumentAnalysis(document.id);
 
         return NextResponse.json({
             id: document.id,
