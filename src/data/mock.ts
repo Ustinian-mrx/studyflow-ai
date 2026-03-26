@@ -12,8 +12,9 @@ import type {
 export const dashboardQuick: DashboardData["quick"] = [
   { title: "上传资料", href: "/upload" },
   { title: "查看历史", href: "/history" },
-  { title: "本周总结", href: "/summary/1" },
-  { title: "闪卡复习", href: "/flashcards/1" },
+  { title: "本周总结", href: "/history" },
+  { title: "闪卡复习", href: "/history" },
+
 ];
 
 export const historyList: HistoryItem[] = [

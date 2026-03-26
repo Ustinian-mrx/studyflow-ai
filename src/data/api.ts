@@ -1,23 +1,6 @@
 import { cookies } from "next/headers";
-import {
-  dashboardQuick,
-  dashboardRecentUploads,
-  dashboardRecentOutputs,
-  processingSteps,
-  uploadOption,
-  flashcardsData,
-  summaryData,
-  profileData,
-  historyList,
-} from "./mock";
-import type {
-  DashboardData,
-  FlashcardsData,
-  HistoryItem,
-  ProfileData,
-  ResultData,
-  SummaryData,
-} from "./types";
+import { processingSteps } from "./mock";
+import type { ProfileData } from "./types";
 import { AUTH_COOKIE_NAME } from "@/lib/constants";
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -36,8 +19,11 @@ async function getAuthHeaders() {
 }
 
 export async function getDashboardData() {
+  const headers = await getAuthHeaders();
+
   const res = await fetch(`${BASE_URL}/api/dashboard`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
@@ -53,9 +39,13 @@ export async function getDashboardData() {
 
   return res.json();
 }
+
 export async function getHistoryList() {
+  const headers = await getAuthHeaders();
+
   const res = await fetch(`${BASE_URL}/api/history`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
@@ -66,8 +56,11 @@ export async function getHistoryList() {
 }
 
 export async function getResultData(id: string) {
+  const headers = await getAuthHeaders();
+
   const res = await fetch(`${BASE_URL}/api/result/${id}`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
@@ -91,8 +84,11 @@ export async function getResultData(id: string) {
 }
 
 export async function getFlashcardsData(id: string) {
+  const headers = await getAuthHeaders();
+
   const res = await fetch(`${BASE_URL}/api/flashcards/${id}`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
@@ -110,13 +106,18 @@ export async function getFlashcardsData(id: string) {
 }
 
 export async function getSummaryData(id: string) {
+  const headers = await getAuthHeaders();
+
   const res = await fetch(`${BASE_URL}/api/summary/${id}`, {
     cache: "no-store",
+    headers,
   });
 
   if (!res.ok) {
     return {
-      id: Number(id) || 0,
+      documentId: Number(id) || 0,
+      summaryId: null,
+      documentName: "未知文档",
       type: "single",
       title: "暂无总结",
       period: "",
@@ -130,11 +131,22 @@ export async function getSummaryData(id: string) {
   return res.json();
 }
 
+
 export async function getProfileData(): Promise<ProfileData> {
   const headers = await getAuthHeaders();
 
   if (!headers) {
-    return profileData;
+    return {
+      name: "未登录用户",
+      email: "",
+      role: "游客",
+      tags: ["暂未生成学习标签"],
+      stats: {
+        documents: 0,
+        flashcards: 0,
+        summaries: 0,
+      },
+    };
   }
 
   const res = await fetch(`${BASE_URL}/api/profile`, {
@@ -143,7 +155,17 @@ export async function getProfileData(): Promise<ProfileData> {
   });
 
   if (!res.ok) {
-    return profileData;
+    return {
+      name: "未登录用户",
+      email: "",
+      role: "游客",
+      tags: ["暂未生成学习标签"],
+      stats: {
+        documents: 0,
+        flashcards: 0,
+        summaries: 0,
+      },
+    };
   }
 
   return res.json();
@@ -151,8 +173,4 @@ export async function getProfileData(): Promise<ProfileData> {
 
 export async function getProcessingSteps() {
   return processingSteps;
-}
-
-export async function getUploadOption() {
-  return uploadOption;
 }

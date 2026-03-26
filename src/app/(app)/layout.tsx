@@ -1,10 +1,24 @@
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
+import { getDashboardData } from "@/data/api";
+import type { DashboardQuickItem } from "@/data/types";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const dashboardData = await getDashboardData();
+
+  const summaryQuickItem = dashboardData.quick.find(
+    (item: DashboardQuickItem) => item.title === "查看总结"
+  );
+
+  const summaryHref = summaryQuickItem?.href || "/history";
+
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
+      <Sidebar summaryHref={summaryHref} />
       <div className="flex-1 flex flex-col">
         <Topbar />
         <main className="p-6">{children}</main>
