@@ -85,7 +85,9 @@ model Summary {
   documentId  Int?
   type        SummaryType
   title       String
-  period      String
+  period      String?
+  periodStart DateTime?
+  periodEnd   DateTime?
   content     String      @db.LongText
   keyPoints   Json
   suggestions Json
@@ -94,7 +96,8 @@ model Summary {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   document    Document?   @relation(fields: [documentId], references: [id], onDelete: SetNull)
 
-  @@index([userId, createdAt])
+  @@index([userId, type, createdAt])
   @@index([documentId])
+  @@index([userId, periodStart, periodEnd])
   @@unique([documentId, type])
 }

@@ -22,7 +22,22 @@ export async function GET(req: Request) {
       },
     });
 
-    const latestSummary = await prisma.summary.findFirst({
+    const latestFlashcardDocument = await prisma.document.findFirst({
+      where: {
+        userId: user.id,
+        flashcards: {
+          some: {},
+        },
+      },
+      orderBy: {
+        uploadedAt: "desc",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const latestSingleSummary = await prisma.summary.findFirst({
       where: {
         userId: user.id,
         type: "single",
@@ -30,6 +45,15 @@ export async function GET(req: Request) {
       },
       orderBy: { createdAt: "desc" },
       select: { documentId: true },
+    });
+
+    const latestWeeklySummary = await prisma.summary.findFirst({
+      where: {
+        userId: user.id,
+        type: "weekly",
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
     });
 
     const flashcardsCount = await prisma.flashcard.count({
@@ -53,15 +77,39 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       quick: [
-        { title: "上传资料", href: "/upload" },
-        { title: "查看历史", href: "/history" },
         {
-          title: "查看总结",
-          href: latestSummary?.documentId
-            ? `/summary/${latestSummary.documentId}`
+          title: "上传资料",
+          href: "/upload",
+          description: "添加新的学习资料并开始分析",
+        },
+        {
+          title: "查看历史",
+          href: "/history",
+          description: "回看已上传文档和分析结果",
+        },
+        {
+          title: "闪卡复习",
+          href: latestFlashcardDocument?.id
+            ? `/flashcards/${latestFlashcardDocument.id}`
             : "/history",
+          description: "进入最近一份资料的闪卡复习",
+        },
+        {
+          title: "单篇总结",
+          href: latestSingleSummary?.documentId
+            ? `/summary/${latestSingleSummary.documentId}`
+            : "/history",
+          description: "查看最近一份文档的总结",
+        },
+        {
+          title: "周总结",
+          href: latestWeeklySummary?.id
+            ? `/summaries/weekly/${latestWeeklySummary.id}`
+            : "/summaries",
+          description: "查看本周学习复盘",
         },
       ],
+
       recentUploads: documents.map((item) => ({
         id: item.id,
         name: item.filename,

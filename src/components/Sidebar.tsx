@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 
 type SidebarProps = {
   summaryHref?: string;
+  flashcardsHref?: string;
 };
 
 export default function Sidebar({
   summaryHref = "/history",
+  flashcardsHref = "/history",
 }: SidebarProps) {
   const pathname = usePathname();
 
@@ -16,20 +18,25 @@ export default function Sidebar({
     { name: "首页", href: "/dashboard" },
     { name: "上传", href: "/upload" },
     { name: "历史记录", href: "/history" },
-    { name: "总结", href: summaryHref },
+    { name: "闪卡", href: flashcardsHref },
+    { name: "单篇总结", href: summaryHref },
+    { name: "周总结", href: "/summaries" },
     { name: "个人中心", href: "/profile" },
   ];
 
   return (
     <aside className="h-screen w-60 border-r bg-white px-4 py-6">
       <div className="mb-6 text-xl font-semibold">StudyFlow AI</div>
-
       <nav className="space-y-2 text-sm">
         {navItems.map((item) => {
           const active =
-            item.name === "总结"
-              ? pathname.startsWith("/summary")
-              : pathname.startsWith(item.href);
+            item.name === "闪卡"
+              ? pathname.startsWith("/flashcards")
+              : item.name === "单篇总结"
+                ? pathname.startsWith("/summary")
+                : item.name === "周总结"
+                  ? pathname.startsWith("/summaries")
+                  : pathname.startsWith(item.href);
 
           return (
             <Link

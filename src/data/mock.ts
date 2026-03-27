@@ -14,7 +14,6 @@ export const dashboardQuick: DashboardData["quick"] = [
   { title: "查看历史", href: "/history" },
   { title: "本周总结", href: "/history" },
   { title: "闪卡复习", href: "/history" },
-
 ];
 
 export const historyList: HistoryItem[] = [
@@ -78,7 +77,9 @@ export const resultData: ResultData = {
 };
 
 export const summaryData: SummaryData = {
-  id: 1,
+  documentId: 1,
+  summaryId: 1,
+  documentName: "高数极限.pdf",
   type: "single",
   title: "高数极限 — 单篇总结",
   period: "2026-03-10",
@@ -89,6 +90,7 @@ export const summaryData: SummaryData = {
 };
 
 export const profileData: ProfileData = {
+  isAuthenticated: true,
   name: "小明",
   email: "user@example.com",
   role: "大学生",

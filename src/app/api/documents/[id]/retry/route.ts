@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { processDocumentAnalysis } from "@/lib/services/document-analysis";
+import { getCurrentUserFromRequest } from "@/lib/server-auth";
 
 export async function POST(
-  _: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getCurrentUserFromRequest(req);
+
+    if (!user) {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
+
     const { id } = await params;
     const documentId = Number(id);
-    const mockUserId = 1;
 
     if (Number.isNaN(documentId)) {
       return NextResponse.json({ error: "无效的文档 id" }, { status: 400 });
@@ -18,12 +24,15 @@ export async function POST(
     const document = await prisma.document.findFirst({
       where: {
         id: documentId,
-        userId: mockUserId,
+        userId: user.id,
       },
     });
 
     if (!document) {
-      return NextResponse.json({ error: "文档不存在" }, { status: 404 });
+      return NextResponse.json(
+        { error: "文档不存在或无权访问" },
+        { status: 404 }
+      );
     }
 
     await prisma.flashcard.deleteMany({
@@ -36,8 +45,8 @@ export async function POST(
 
     await prisma.summary.deleteMany({
       where: {
-        userId: mockUserId,
-        title: `${document.filename} - 单篇总结`,
+        userId: user.id,
+        documentId,
         type: "single",
       },
     });
