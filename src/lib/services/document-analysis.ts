@@ -22,6 +22,72 @@ type AIAnalysisResult = {
   flashcards: AIFlashcard[];
 };
 
+function createFallbackAnalysis(
+  filename: string,
+  fileType: string | null
+): AIAnalysisResult {
+  const materialType =
+    fileType === "application/pdf" ? "PDF 文档" : "图片资料";
+
+  return {
+    summary: `当前百炼服务暂时不可用，系统已为《${filename}》生成一份本地兜底分析结果。该资料被识别为${materialType}，可继续用于结果页、闪卡和总结页联调。`,
+    keyPoints: [
+      `已成功接收并识别《${filename}》`,
+      `当前资料类型为${materialType}`,
+      "上传、解析、落库与页面展示链路可继续验证",
+    ],
+    difficulties: [
+      "当前外部 AI 服务账号状态异常，真实模型分析被拦截",
+      "该结果为本地兜底数据，不代表真实模型输出质量",
+    ],
+    suggestions: [
+      "先继续验证上传、结果、闪卡、总结等页面流程",
+      "恢复百炼账号状态后再切回真实 AI 结果联调",
+      "后续可保留该兜底逻辑，避免外部服务异常时整条链路中断",
+    ],
+    tags: ["兜底分析", materialType, "联调测试"],
+    flashcards: [
+      {
+        question: "当前资料的处理状态是什么？",
+        answer: "资料已完成本地兜底分析，可继续验证后续页面与数据库链路。",
+        tags: ["流程状态"],
+      },
+      {
+        question: "为什么当前结果不是完全真实的 AI 输出？",
+        answer: "因为外部百炼服务当前返回账号状态拦截，系统自动切换到了本地兜底分析。",
+        tags: ["异常说明"],
+      },
+      {
+        question: "当前最适合继续验证什么？",
+        answer: "适合继续验证结果页、闪卡页、总结页、历史记录和重试流程是否正常。",
+        tags: ["联调建议"],
+      },
+      {
+        question: "恢复真实 AI 分析前需要做什么？",
+        answer: "需要先恢复百炼账号状态，确保模型接口可以正常调用。",
+        tags: ["恢复条件"],
+      },
+      {
+        question: "当前这份资料是什么类型？",
+        answer: `这份资料被识别为${materialType}。`,
+        tags: ["资料类型"],
+      },
+    ],
+  };
+}
+
+function shouldFallbackToLocalAnalysis(error: unknown) {
+  const message =
+    error instanceof Error ? error.message : String(error ?? "");
+
+  return (
+    message.includes("Access denied") ||
+    message.includes("good standing") ||
+    message.includes("overdue-payment") ||
+    message.includes("insufficient_quota")
+  );
+}
+
 function getSingleSummaryTitle(filename: string) {
   return `${filename} — 单篇总结`;
 }
@@ -258,6 +324,8 @@ async function analyzeFile(
 
 export async function processDocumentAnalysis(documentId: number) {
   try {
+    console.log("[analysis] 开始处理文档:", documentId);
+
     await prisma.document.update({
       where: { id: documentId },
       data: {
@@ -265,6 +333,8 @@ export async function processDocumentAnalysis(documentId: number) {
         errorMessage: null,
       },
     });
+
+    console.log("[analysis] 状态 -> extracting");
 
     const document = await prisma.document.findUnique({
       where: { id: documentId },
@@ -280,6 +350,13 @@ export async function processDocumentAnalysis(documentId: number) {
       document.fileUrl.replace(/^\/+/, "")
     );
 
+    console.log("[analysis] 文档信息:", {
+      id: document.id,
+      filename: document.filename,
+      fileType: document.fileType,
+      fileUrl: document.fileUrl,
+    });
+
     await prisma.document.update({
       where: { id: documentId },
       data: {
@@ -287,15 +364,35 @@ export async function processDocumentAnalysis(documentId: number) {
       },
     });
 
-    const aiResult = await analyzeFile(
-      absoluteFilePath,
-      document.filename,
-      document.fileType
-    );
+    console.log("[analysis] 状态 -> analyzing");
+
+    let aiResult: AIAnalysisResult;
+
+    try {
+      console.log("[analysis] 开始调用模型分析");
+      aiResult = await analyzeFile(
+        absoluteFilePath,
+        document.filename,
+        document.fileType
+      );
+      console.log("[analysis] 模型分析完成");
+    } catch (error) {
+      if (!shouldFallbackToLocalAnalysis(error)) {
+        throw error;
+      }
+
+      console.warn(
+        "[analysis] 外部 AI 服务不可用，切换到本地兜底分析:",
+        error
+      );
+
+      aiResult = createFallbackAnalysis(document.filename, document.fileType);
+    }
 
     const summaryTitle = getSingleSummaryTitle(document.filename);
     const today = new Date().toISOString().slice(0, 10);
 
+    console.log("[analysis] 写入 AnalysisResult");
     await prisma.analysisResult.upsert({
       where: { documentId },
       update: {
@@ -320,6 +417,7 @@ export async function processDocumentAnalysis(documentId: number) {
     });
 
     if (aiResult.flashcards.length > 0) {
+      console.log("[analysis] 写入 Flashcard");
       await prisma.flashcard.createMany({
         data: aiResult.flashcards.map((card) => ({
           documentId,
@@ -339,6 +437,7 @@ export async function processDocumentAnalysis(documentId: number) {
     });
 
     if (existingSummary) {
+      console.log("[analysis] 更新 Summary");
       await prisma.summary.update({
         where: { id: existingSummary.id },
         data: {
@@ -350,6 +449,7 @@ export async function processDocumentAnalysis(documentId: number) {
         },
       });
     } else {
+      console.log("[analysis] 新建 Summary");
       await prisma.summary.create({
         data: {
           userId: document.userId,
@@ -371,7 +471,11 @@ export async function processDocumentAnalysis(documentId: number) {
         errorMessage: null,
       },
     });
+
+    console.log("[analysis] 状态 -> done");
   } catch (error) {
+    console.error("[analysis] 处理失败:", error);
+
     await prisma.document.update({
       where: { id: documentId },
       data: {
