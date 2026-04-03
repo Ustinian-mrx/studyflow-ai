@@ -29,6 +29,7 @@ export default function Sidebar({
       <div className="mb-6 text-xl font-semibold">StudyFlow AI</div>
       <nav className="space-y-2 text-sm">
         {navItems.map((item) => {
+          // 动态入口使用 startsWith 匹配，保证不同 id 页面也能高亮。
           const active =
             item.name === "闪卡"
               ? pathname.startsWith("/flashcards")

@@ -7,6 +7,7 @@ import { getWeeklySummaries } from "@/data/api";
 import type { WeeklySummaryListItem } from "@/data/types";
 
 export default async function SummariesPage() {
+  // 周总结列表是 summary 资源视图，不再复用 documentId 路由。
   const items = await getWeeklySummaries();
 
   return (

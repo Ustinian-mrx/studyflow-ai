@@ -38,6 +38,7 @@ export default function UploadPage() {
                 return;
             }
 
+            // 上传成功后直接进入对应结果页，后续状态由结果页轮询更新。
             router.push(`/result/${data.id}`);
         } catch {
             setError("网络异常，请稍后重试");

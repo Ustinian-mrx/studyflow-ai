@@ -61,6 +61,7 @@ async function getAuthHeaders() {
   }
 
   return {
+    // 服务端组件请求内部 API 时，向后透传登录态。
     Authorization: `Bearer ${token}`,
   };
 }
@@ -69,6 +70,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   const headers = await getAuthHeaders();
 
   if (!headers) {
+    // 返回游客态固定结构，避免页面因为字段缺失报错。
     return createGuestDashboardData();
   }
 

@@ -37,6 +37,7 @@ export async function GET(req: Request) {
       },
     });
 
+    // 单篇总结入口按文档维度跳转到 /summary/[documentId]。
     const latestSingleSummary = await prisma.summary.findFirst({
       where: {
         userId: user.id,
@@ -47,6 +48,7 @@ export async function GET(req: Request) {
       select: { documentId: true },
     });
 
+    // 周总结使用独立的 summaryId，并走 /summaries/weekly/[id] 路由。
     const latestWeeklySummary = await prisma.summary.findFirst({
       where: {
         userId: user.id,

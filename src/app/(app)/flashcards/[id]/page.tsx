@@ -11,6 +11,7 @@ type Props = {
 
 export default async function FlashcardsPage({ params }: Props) {
   const { id } = await params;
+  // 这里的 id 与结果页保持一致，语义为 documentId。
   const data = await getFlashcardsData(id);
 
   return (

@@ -14,6 +14,7 @@ export async function GET(
     }
 
     const { id } = await params;
+    // 周总结详情路由参数使用 summary 主键 id。
     const summaryId = Number(id);
 
     if (Number.isNaN(summaryId)) {

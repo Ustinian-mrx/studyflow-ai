@@ -35,6 +35,7 @@ export async function POST(
       );
     }
 
+    // 先清理旧结果，避免重试后出现新旧分析数据混合。
     await prisma.flashcard.deleteMany({
       where: { documentId },
     });

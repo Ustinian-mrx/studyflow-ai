@@ -26,6 +26,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json(
+      // 历史页只需要列表摘要字段，不回传完整文档实体。
       list.map((item) => ({
         id: item.id,
         name: item.filename,

@@ -11,6 +11,7 @@ type Props = {
 
 export default async function WeeklySummaryDetailPage({ params }: Props) {
   const { id } = await params;
+  // 这里的 id 是 weekly summary 主键，而不是文档 id。
   const data = await getWeeklySummaryDetail(id);
 
   if (!data) {

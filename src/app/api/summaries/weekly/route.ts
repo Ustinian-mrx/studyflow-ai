@@ -29,6 +29,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json(
+      // 统一输出 ISO 时间，前端再按展示场景格式化。
       weeklySummaries.map((item) => ({
         id: item.id,
         title: item.title,

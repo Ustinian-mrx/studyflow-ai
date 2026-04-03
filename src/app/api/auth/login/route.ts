@@ -26,6 +26,7 @@ export async function POST(req: Request) {
     value: token,
     httpOnly: true,
     sameSite: "lax",
+    // 仅在生产环境启用 secure，方便本地 localhost 调试。
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,

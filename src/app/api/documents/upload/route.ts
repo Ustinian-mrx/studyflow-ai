@@ -57,6 +57,7 @@ export async function POST(req: Request) {
       },
     });
 
+    // 当前 MVP 采用同步触发分析：上传成功后立即进入分析流程。
     await processDocumentAnalysis(document.id);
 
     return NextResponse.json({

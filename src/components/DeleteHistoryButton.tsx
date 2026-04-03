@@ -13,6 +13,7 @@ export default function DeleteHistoryButton({ id }: Props) {
     const [loading, setLoading] = useState(false);
 
     async function handleDelete() {
+        // 删除属于高风险操作，先二次确认避免误删。
         const ok = window.confirm("确定要删除这条历史记录吗？删除后无法恢复。");
         if (!ok) return;
 

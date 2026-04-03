@@ -20,6 +20,7 @@ type OutputItem = {
 export default async function DashboardPage() {
   const data = await getDashboardData();
 
+  // 未登录态直接给出操作入口，避免展示空白统计卡片。
   if (!data.isAuthenticated) {
     return (
       <div className="space-y-6">
@@ -72,6 +73,7 @@ ${
         : "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
 }`}
           >
+            {/* 快捷卡片支持 description，可统一承载动态入口说明。 */}
             <div>
               <div>{item.title}</div>
               {item.description ? (

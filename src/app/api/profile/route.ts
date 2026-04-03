@@ -30,6 +30,7 @@ export async function GET(req: Request) {
       },
     });
 
+    // 目前先从文档名推导标签，作为轻量化画像占位方案。
     const derivedTags = Array.from(
       new Set(
         user.documents

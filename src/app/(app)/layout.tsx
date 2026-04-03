@@ -10,6 +10,7 @@ export default async function AppLayout({
 }) {
   const dashboardData = await getDashboardData();
 
+  // 复用 dashboard 快捷入口，确保侧边栏跳转与首页入口保持一致。
   const summaryQuickItem = dashboardData.quick.find(
     (item: DashboardQuickItem) =>
       item.title === "单篇总结" || item.title === "查看总结"

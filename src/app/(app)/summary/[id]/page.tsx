@@ -11,6 +11,7 @@ type Props = {
 
 export default async function SummaryPage({ params }: Props) {
   const { id } = await params;
+  // 单篇总结页按 documentId 拉取，避免与 weekly summaryId 混淆。
   const data = await getSummaryData(id);
 
   const hasContent =

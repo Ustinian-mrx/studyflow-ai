@@ -33,6 +33,7 @@ export default function Topbar({ userName = "用户" }: TopbarProps) {
     function handleClickOutside(event: MouseEvent) {
       if (!menuRef.current) return;
 
+      // 点击菜单外区域时收起下拉，避免悬浮菜单残留。
       if (!menuRef.current.contains(event.target as Node)) {
         setOpen(false);
       }

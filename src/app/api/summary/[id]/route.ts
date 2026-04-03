@@ -14,6 +14,7 @@ export async function GET(
     }
 
     const { id } = await params;
+    // 这里的 [id] 语义是 documentId，不是 summary 主键 id。
     const documentId = Number(id);
 
     if (Number.isNaN(documentId)) {

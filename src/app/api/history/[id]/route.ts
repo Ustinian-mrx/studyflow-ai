@@ -33,6 +33,7 @@ export async function DELETE(
       return NextResponse.json({ error: "记录不存在" }, { status: 404 });
     }
 
+    // 显式清理关联数据，避免未来关系策略调整后出现残留数据。
     await prisma.summary.deleteMany({
       where: {
         userId: user.id,

@@ -23,6 +23,7 @@ export async function GET(
     const document = await prisma.document.findFirst({
       where: {
         id: documentId,
+        // 强制校验文档归属，防止通过改 URL 访问他人闪卡。
         userId: user.id,
       },
       select: {

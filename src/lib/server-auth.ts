@@ -36,6 +36,7 @@ function getTokenFromAuthorization(req: Request) {
 }
 
 export async function getCurrentUserFromRequest(req: Request) {
+  // 同时支持浏览器 Cookie 鉴权和服务端 Bearer 透传鉴权。
   const token = getTokenFromCookie(req) || getTokenFromAuthorization(req);
 
   if (!token) {
@@ -44,6 +45,7 @@ export async function getCurrentUserFromRequest(req: Request) {
 
   const payload = verifyToken(token);
 
+  // 只有在 payload 结构通过校验后才继续查库。
   if (!payload || typeof payload.id !== "number") {
     return null;
   }

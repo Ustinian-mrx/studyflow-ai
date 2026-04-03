@@ -9,6 +9,7 @@ import DeleteHistoryButton from "@/components/DeleteHistoryButton";
 import type { HistoryItem } from "@/data/types";
 
 export default async function HistoryPage() {
+  // 服务端直取历史列表，避免客户端首屏再发一次请求。
   const historyList = await getHistoryList();
 
   return (
@@ -44,6 +45,7 @@ export default async function HistoryPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                  {/* 历史记录以文档为中心，三个入口共享同一个 documentId。 */}
                   <Button asChild size="sm">
                     <Link href={`/result/${item.id}`}>查看分析</Link>
                   </Button>

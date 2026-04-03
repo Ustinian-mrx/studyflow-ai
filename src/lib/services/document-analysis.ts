@@ -26,6 +26,7 @@ function createFallbackAnalysis(
   filename: string,
   fileType: string | null
 ): AIAnalysisResult {
+  // 外部 AI 不可用时，生成本地兜底结果，保障页面与数据库链路可继续运行。
   const materialType =
     fileType === "application/pdf" ? "PDF 文档" : "图片资料";
 
@@ -80,6 +81,7 @@ function shouldFallbackToLocalAnalysis(error: unknown) {
   const message =
     error instanceof Error ? error.message : String(error ?? "");
 
+  // 仅对已知服务侧/账号侧异常触发降级，未知错误仍按失败抛出。
   return (
     message.includes("Access denied") ||
     message.includes("good standing") ||
@@ -110,6 +112,7 @@ function normalizeFlashcards(value: unknown): AIFlashcard[] {
         typeof record.answer === "string" ? record.answer.trim() : "";
       const tags = normalizeStringArray(record.tags);
 
+      // 过滤不完整闪卡，避免写入无效数据。
       if (!question || !answer) return null;
 
       return {
@@ -126,6 +129,7 @@ function normalizeFlashcards(value: unknown): AIFlashcard[] {
 function extractJsonText(raw: string) {
   const trimmed = raw.trim();
 
+  // 模型可能返回 ```json 包裹内容，解析前先去掉外层代码块。
   if (trimmed.startsWith("```")) {
     const withoutFence = trimmed
       .replace(/^```json\s*/i, "")
@@ -240,11 +244,11 @@ async function analyzeDocumentWithTongyi(
 ): Promise<AIAnalysisResult> {
   const buffer = await fs.readFile(absoluteFilePath);
 
-    const fileObject = await openai.files.create({
+  const fileObject = await openai.files.create({
     file: new File([buffer], filename, { type: mimeType }),
+    // 百炼支持 file-extract，但 OpenAI SDK 类型未收录，需显式断言。
     purpose: "file-extract" as never,
   });
-
 
   let lastError: unknown = null;
 
@@ -282,6 +286,7 @@ async function analyzeDocumentWithTongyi(
       const message =
         error instanceof Error ? error.message : String(error);
 
+      // 文件解析在服务端异步执行，先轮询几轮再决定失败。
       if (!message.includes("File parsing in progress")) {
         throw error;
       }

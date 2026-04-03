@@ -102,6 +102,7 @@ export default function ResultDetailClient({
   const [retryLoading, setRetryLoading] = useState(false);
 
   async function refreshResult() {
+    // 手动刷新与自动轮询复用同一套请求与状态更新逻辑。
     const nextData = await requestResult(id);
     setData(nextData);
     setLastUpdatedAt(new Date().toLocaleTimeString());
@@ -149,6 +150,7 @@ export default function ResultDetailClient({
         const shouldPoll = PROCESSING_STATUSES.includes(nextData.status);
         setIsPolling(shouldPoll);
 
+        // 仅在处理中状态继续轮询，完成或失败后自动停止。
         if (shouldPoll) {
           timer = setTimeout(run, 2000);
         }
@@ -174,6 +176,7 @@ export default function ResultDetailClient({
 
     return () => {
       stopped = true;
+      // 组件卸载时清理定时器，避免重复请求和内存泄漏。
       if (timer) clearTimeout(timer);
     };
   }, [id]);

@@ -11,6 +11,7 @@ const TOKEN_KEY = AUTH_COOKIE_NAME;
 const JWT_SECRET = process.env.JWT_SECRET || "your_secret_key";
 
 export function getToken() {
+  // 客户端兜底读取：主要用于当前登录页/顶栏本地态兼容。
   if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEY);
 }

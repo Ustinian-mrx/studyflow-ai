@@ -8,6 +8,7 @@ import { getProfileData } from "@/data/api";
 export default async function ProfilePage() {
   const data = await getProfileData();
 
+  // 与 dashboard 保持同样的未登录兜底体验，避免页面语义不一致。
   if (!data.isAuthenticated) {
     return (
       <div className="space-y-6">
