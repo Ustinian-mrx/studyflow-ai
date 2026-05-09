@@ -19,6 +19,7 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.create({
     data: {
+      // 保留最小必需字段，姓名和角色提供默认值避免空数据。
       email,
       password: hashed,
       name: name || "未命名用户",

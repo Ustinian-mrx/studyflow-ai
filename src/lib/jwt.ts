@@ -15,6 +15,7 @@ export function verifyToken(token: string): JwtPayload | null {
     try {
         return jwt.verify(token, JWT_SECRET) as JwtPayload;
     } catch {
+        // 无论是过期、伪造还是格式错误 token，都按未登录处理。
         return null;
     }
 }

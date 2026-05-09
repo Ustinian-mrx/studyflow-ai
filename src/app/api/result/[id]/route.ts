@@ -60,6 +60,7 @@ export async function GET(
             uploadedAt: document.uploadedAt.toISOString().slice(0, 16).replace("T", " "),
             status: document.status,
             summary: analysisResult?.summary ?? "",
+            // 把 JSON 字段统一转成字符串数组，保证前端渲染稳定。
             keyPoints: Array.isArray(analysisResult?.keyPoints)
                 ? analysisResult.keyPoints.map(String)
                 : [],

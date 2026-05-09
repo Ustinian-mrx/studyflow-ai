@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserFromRequest } from "@/lib/server-auth";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const mockUserId = 1;
+    const user = await getCurrentUserFromRequest(req);
+
+    if (!user) {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
 
     const list = await prisma.document.findMany({
       where: {
-        userId: mockUserId,
+        userId: user.id,
       },
       orderBy: {
         uploadedAt: "desc",
@@ -21,6 +26,7 @@ export async function GET() {
     });
 
     return NextResponse.json(
+      // 历史页只需要列表摘要字段，不回传完整文档实体。
       list.map((item) => ({
         id: item.id,
         name: item.filename,

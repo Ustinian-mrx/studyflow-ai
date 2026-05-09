@@ -8,11 +8,16 @@ datasource db {
 }
 
 enum DocumentStatus {
-uploading
-extracting
-analyzing
-done
-failed
+  uploading
+  extracting
+  analyzing
+  done
+  failed
+}
+
+enum SummaryType {
+  single
+  weekly
 }
 
 model User {
@@ -25,57 +30,74 @@ model User {
 
   documents Document[]
   summaries Summary[]
+
+  @@index([createdAt])
 }
 
 model Document {
-id Int @id @default(autoincrement())
-userId Int
-filename String
-fileUrl String
-fileType String?
-status DocumentStatus @default(uploading)
-extractedText String? @db.LongText
-errorMessage String? @db.Text
-uploadedAt DateTime @default(now())
+  id            Int             @id @default(autoincrement())
+  userId        Int
+  filename      String
+  fileUrl       String
+  fileType      String?
+  status        DocumentStatus  @default(uploading)
+  extractedText String?         @db.LongText
+  errorMessage  String?         @db.Text
+  uploadedAt    DateTime        @default(now())
 
-user User @relation(fields: [userId], references: [id])
-result AnalysisResult?
-flashcards Flashcard[]
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  result        AnalysisResult?
+  flashcards    Flashcard[]
+  summaries     Summary[]
+
+  @@index([userId, uploadedAt])
+  @@index([userId, status])
 }
 
 model AnalysisResult {
   id           Int      @id @default(autoincrement())
   documentId   Int      @unique
-  summary      String
+  summary      String   @db.LongText
   keyPoints    Json
   difficulties Json
   suggestions  Json
   tags         Json
   createdAt    DateTime @default(now())
 
-  document     Document @relation(fields: [documentId], references: [id])
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 }
 
 model Flashcard {
-  id         Int    @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   documentId Int
-  question   String
-  answer     String
+  question   String  @db.Text
+  answer     String  @db.LongText
   tags       Json?
 
-  document   Document @relation(fields: [documentId], references: [id])
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
 }
 
 model Summary {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  type       String
-  title      String
-  period     String
-  content    String
-  keyPoints  Json
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  documentId  Int?
+  type        SummaryType
+  title       String
+  period      String?
+  periodStart DateTime?
+  periodEnd   DateTime?
+  content     String      @db.LongText
+  keyPoints   Json
   suggestions Json
-  createdAt  DateTime @default(now())
+  createdAt   DateTime    @default(now())
 
-  user       User     @relation(fields: [userId], references: [id])
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document    Document?   @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([userId, type, createdAt])
+  @@index([documentId])
+  @@index([userId, periodStart, periodEnd])
+  @@unique([documentId, type])
 }

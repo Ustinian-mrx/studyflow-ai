@@ -1,9 +1,41 @@
+import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import SectionCard from "@/components/SectionCard";
+import EmptyState from "@/components/EmptyState";
+import { Button } from "@/components/ui/button";
 import { getProfileData } from "@/data/api";
 
 export default async function ProfilePage() {
   const data = await getProfileData();
+
+  // 与 dashboard 保持同样的未登录兜底体验，避免页面语义不一致。
+  if (!data.isAuthenticated) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="个人中心"
+          description="登录后可以查看你的账号信息和学习档案。"
+        />
+
+        <SectionCard title="账号状态">
+          <EmptyState
+            title="当前未登录"
+            description="登录后即可查看个人资料、学习统计和标签。"
+            action={
+              <div className="flex gap-3">
+                <Button asChild size="sm">
+                  <Link href="/login">去登录</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/register">去注册</Link>
+                </Button>
+              </div>
+            }
+          />
+        </SectionCard>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -41,13 +73,17 @@ export default async function ProfilePage() {
       </SectionCard>
 
       <SectionCard title="学习标签">
-        <div className="flex flex-wrap gap-2 text-sm text-slate-600">
-          {data.tags.map((tag: string) => (
-            <span key={tag} className="rounded-full border px-3 py-1">
-              {tag}
-            </span>
-          ))}
-        </div>
+        {data.tags.length === 0 ? (
+          <div className="text-sm text-slate-500">暂未生成学习标签</div>
+        ) : (
+          <div className="flex flex-wrap gap-2 text-sm text-slate-600">
+            {data.tags.map((tag: string) => (
+              <span key={tag} className="rounded-full border px-3 py-1">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </SectionCard>
 
       <SectionCard title="账号操作">

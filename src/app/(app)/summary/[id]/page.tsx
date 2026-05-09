@@ -11,6 +11,7 @@ type Props = {
 
 export default async function SummaryPage({ params }: Props) {
   const { id } = await params;
+  // 单篇总结页按 documentId 拉取，避免与 weekly summaryId 混淆。
   const data = await getSummaryData(id);
 
   const hasContent =
@@ -18,10 +19,14 @@ export default async function SummaryPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="总结" description="查看单篇总结内容。" />
+      <PageHeader
+        title="文档总结"
+        description="查看当前文档生成的单篇总结内容。"
+      />
 
       <SectionCard title="总结信息">
         <div className="space-y-1 text-sm text-slate-600">
+          <div>文档：{data.documentName || "未知文档"}</div>
           <div>标题：{data.title || "暂无标题"}</div>
           <div>类型：{data.type === "single" ? "单篇总结" : "阶段总结"}</div>
           <div>周期：{data.period || "暂无"}</div>

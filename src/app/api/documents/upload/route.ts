@@ -9,10 +9,15 @@ import {
   ensureUploadDir,
 } from "@/lib/file";
 import { processDocumentAnalysis } from "@/lib/services/document-analysis";
+import { getCurrentUserFromRequest } from "@/lib/server-auth";
 
 export async function POST(req: Request) {
   try {
-    const mockUserId = 1;
+    const user = await getCurrentUserFromRequest(req);
+
+    if (!user) {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
 
     const formData = await req.formData();
     const file = formData.get("file");
@@ -44,7 +49,7 @@ export async function POST(req: Request) {
 
     const document = await prisma.document.create({
       data: {
-        userId: mockUserId,
+        userId: user.id,
         filename: file.name,
         fileUrl: `/uploads/${safeFilename}`,
         fileType: file.type,
@@ -52,6 +57,7 @@ export async function POST(req: Request) {
       },
     });
 
+    // 当前 MVP 采用同步触发分析：上传成功后立即进入分析流程。
     await processDocumentAnalysis(document.id);
 
     return NextResponse.json({

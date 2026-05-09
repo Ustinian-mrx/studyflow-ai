@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserFromRequest } from "@/lib/server-auth";
 
 export async function GET(
-  _: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getCurrentUserFromRequest(req);
+
+    if (!user) {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
+
     const { id } = await params;
     const documentId = Number(id);
 
@@ -13,12 +20,23 @@ export async function GET(
       return NextResponse.json({ error: "无效的文档 id" }, { status: 400 });
     }
 
-    const document = await prisma.document.findUnique({
-      where: { id: documentId },
+    const document = await prisma.document.findFirst({
+      where: {
+        id: documentId,
+        // 强制校验文档归属，防止通过改 URL 访问他人闪卡。
+        userId: user.id,
+      },
+      select: {
+        id: true,
+        filename: true,
+      },
     });
 
     if (!document) {
-      return NextResponse.json({ error: "文档不存在" }, { status: 404 });
+      return NextResponse.json(
+        { error: "文档不存在或无权访问" },
+        { status: 404 }
+      );
     }
 
     const flashcards = await prisma.flashcard.findMany({

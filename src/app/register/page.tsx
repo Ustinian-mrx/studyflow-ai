@@ -58,6 +58,7 @@ export default function RegisterPage() {
                 return;
             }
 
+            // 注册成功后短暂停留提示，再跳登录页继续流程。
             setSuccess("注册成功，正在跳转到登录页...");
             setTimeout(() => {
                 router.push("/login");

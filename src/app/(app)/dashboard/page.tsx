@@ -5,12 +5,10 @@ import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { getDashboardData } from "@/data/api";
-import type { HistoryItem } from "@/data/types";
-
-type QuickItem = {
-  title: string;
-  href: string;
-};
+import type {
+  DashboardQuickItem,
+  HistoryItem,
+} from "@/data/types";
 
 type OutputItem = {
   id: number;
@@ -22,6 +20,35 @@ type OutputItem = {
 export default async function DashboardPage() {
   const data = await getDashboardData();
 
+  // 未登录态直接给出操作入口，避免展示空白统计卡片。
+  if (!data.isAuthenticated) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="学习控制台"
+          description="登录后可以查看你的上传记录、总结和学习进度。"
+        />
+
+        <SectionCard title="开始使用">
+          <EmptyState
+            title="你还没有登录"
+            description="登录后即可上传资料、生成闪卡和查看总结。"
+            action={
+              <div className="flex gap-3">
+                <Button asChild size="sm">
+                  <Link href="/login">去登录</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/register">去注册</Link>
+                </Button>
+              </div>
+            }
+          />
+        </SectionCard>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -30,23 +57,32 @@ export default async function DashboardPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-2">
-        {data.quick.map((item: QuickItem, index: number) => (
+        {data.quick.map((item: DashboardQuickItem, index: number) => (
           <Link
             key={item.href}
             href={item.href}
-            className={`rounded-xl border p-6 h-28 flex items-center justify-between
+            className={`rounded-xl border p-6 min-h-32 flex flex-col justify-between
 text-lg font-semibold transition hover:scale-[1.02] hover:shadow-lg
-${index % 4 === 0
-                ? "bg-gradient-to-r from-slate-900 to-slate-700 text-white"
-                : index % 4 === 1
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-500 text-white"
-                  : index % 4 === 2
-                    ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white"
-                    : "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
-              }`}
+${
+  index % 4 === 0
+    ? "bg-gradient-to-r from-slate-900 to-slate-700 text-white"
+    : index % 4 === 1
+      ? "bg-gradient-to-r from-blue-600 to-indigo-500 text-white"
+      : index % 4 === 2
+        ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white"
+        : "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+}`}
           >
-            {item.title}
-            <span className="text-sm opacity-80">→</span>
+            {/* 快捷卡片支持 description，可统一承载动态入口说明。 */}
+            <div>
+              <div>{item.title}</div>
+              {item.description ? (
+                <div className="mt-2 text-sm font-normal opacity-85">
+                  {item.description}
+                </div>
+              ) : null}
+            </div>
+            <span className="text-sm opacity-80 self-end">→</span>
           </Link>
         ))}
       </div>

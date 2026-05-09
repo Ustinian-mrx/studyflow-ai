@@ -1,136 +1,97 @@
 # StudyFlow AI
 
-StudyFlow AI 是一个面向学习资料整理与复习的 Web 应用。用户可以上传 PDF 或图片资料，系统会生成分析结果、总结和复习闪卡，并在历史记录与个人中心中沉淀学习数据。
+StudyFlow AI 是一个面向学习场景的智能资料分析系统。用户可以上传 PDF 或图片类学习资料，系统会对内容进行分析，并生成分析结果、闪卡、单篇总结和周总结，帮助用户完成“上传资料 -> 理解内容 -> 复习巩固”的学习闭环。
 
-当前仓库处于 MVP 阶段，已经具备完整的页面骨架、数据库模型和基础接口，但分析流程仍是占位实现，认证链路和数据访问策略也还有待收口。
+## 项目简介
 
-## 项目目标
+本项目的核心目标是把零散的学习资料转化为更容易复习和整理的结构化内容。它主要面向以下场景：
 
-- 上传学习资料并持久化到数据库
-- 生成文档分析结果，包括摘要、知识点、疑难点、学习建议、标签
-- 为单篇资料生成复习闪卡与总结
-- 提供历史记录、统计信息和个人中心
-- 为后续接入真实 OCR / LLM 服务预留后端结构
+- 上传课件、讲义、实验报告、截图笔记等学习资料
+- 自动生成摘要、知识点、疑难点和学习建议
+- 自动生成闪卡，用于快速复习
+- 生成单篇总结和周总结，帮助做阶段复盘
 
-## 当前功能状态
+## 主要功能
 
-### 已实现
+- 用户注册、登录、退出登录
+- 上传学习资料
+  - 支持 `PDF`、`PNG`、`JPG`、`JPEG`、`WEBP`
+  - 单个文件大小限制为 `10MB`
+- AI 分析资料内容
+  - 生成摘要
+  - 提取知识点
+  - 提取疑难点
+  - 生成学习建议
+- 自动生成闪卡
+- 单篇总结查看
+- 周总结列表与详情查看
+- 历史记录查看、删除、重试分析
+- 首页控制台统计与快捷入口
 
-- 基于 Next.js App Router 的前后端一体化项目结构
-- Prisma + MySQL 数据建模与迁移
-- 用户注册、登录、退出接口
-- 文档上传、存储到 `public/uploads`、状态轮询页面
-- 分析结果、闪卡、总结、历史记录、个人中心页面
-- 文档删除与失败后重试分析
+## 当前 AI 能力说明
 
-### 当前仍为占位或半成品
+项目当前接入了通义千问相关模型进行资料分析：
 
-- 文档分析由 `src/lib/services/document-analysis.ts` 中的假数据模拟生成
-- 首页 `src/app/page.tsx` 仍保留默认 Next.js 模板，未接入产品首页
-- 鉴权方式同时混用了 Cookie、Bearer Token 和 `mockUserId`
-- 部分数据获取逻辑仍保留 mock 数据痕迹
-- 上传分析是同步执行，不是真正的异步后台任务
+- 图片资料：视觉模型
+- PDF / 长文档：文档分析模型
+
+同时，项目保留了一个本地兜底分析逻辑：
+
+- 当外部 AI 服务不可用时，系统会自动生成本地兜底分析结果
+- 这样可以保证上传、结果页、闪卡页和总结页的主流程仍然可联调、可演示
 
 ## 技术栈
 
-- 前端：Next.js 16、React 19、TypeScript、Tailwind CSS 4
-- UI：shadcn 风格组件、Radix 体系、Lucide 图标
-- 后端：Next.js Route Handlers
+- 前端框架：Next.js 16
+- UI：React 19、Tailwind CSS、shadcn/ui
+- 后端：Next.js App Router API Routes
 - 数据库：MySQL
 - ORM：Prisma
-- 认证：JWT + HttpOnly Cookie（当前实现仍不统一）
-- 包管理：pnpm
+- 鉴权：JWT + Cookie
+- AI 接入：OpenAI SDK 兼容方式接入阿里云百炼 / 通义千问
 
-## 目录结构
+## 页面结构
 
-```text
-studyflow-ai
-├─ prisma
-│  ├─ migrations
-│  └─ schema.prisma
-├─ public
-│  └─ uploads
-├─ src
-│  ├─ app
-│  │  ├─ (app)
-│  │  │  ├─ dashboard
-│  │  │  ├─ flashcards
-│  │  │  ├─ history
-│  │  │  ├─ profile
-│  │  │  ├─ result
-│  │  │  ├─ summary
-│  │  │  └─ upload
-│  │  ├─ api
-│  │  │  ├─ auth
-│  │  │  ├─ dashboard
-│  │  │  ├─ documents
-│  │  │  ├─ flashcards
-│  │  │  ├─ history
-│  │  │  ├─ profile
-│  │  │  ├─ result
-│  │  │  └─ summary
-│  │  ├─ login
-│  │  ├─ register
-│  │  └─ page.tsx
-│  ├─ components
-│  ├─ data
-│  └─ lib
-└─ README.md
-```
+项目当前主要页面包括：
 
-## 核心业务流程
-
-1. 用户注册并登录。
-2. 用户在 `/upload` 上传 PDF 或图片文件。
-3. 文件保存到 `public/uploads`，同时在 `Document` 表中创建记录。
-4. `processDocumentAnalysis` 根据文档生成占位分析结果。
-5. 系统写入 `AnalysisResult`、`Flashcard`、`Summary`。
-6. 前端在结果页轮询状态，并展示摘要、知识点、建议、标签等内容。
-
-## 数据模型概览
-
-`prisma/schema.prisma` 中定义了 5 个核心模型：
-
-- `User`：用户信息，包含邮箱、密码、姓名、角色
-- `Document`：上传资料及处理状态
-- `AnalysisResult`：单篇资料分析结果
-- `Flashcard`：文档关联闪卡
-- `Summary`：按用户沉淀的总结内容
-
-其中 `Document.status` 使用 `DocumentStatus` 枚举管理处理阶段：
-
-- `uploading`
-- `extracting`
-- `analyzing`
-- `done`
-- `failed`
-
-## 主要页面
-
-- `/login`：登录
-- `/register`：注册
+- `/login`：登录页
+- `/register`：注册页
 - `/dashboard`：学习控制台
-- `/upload`：上传资料
-- `/result/[id]`：分析结果
-- `/flashcards/[id]`：闪卡详情
-- `/summary/[id]`：总结详情
-- `/history`：历史记录
+- `/upload`：资料上传页
+- `/history`：历史记录页
+- `/result/[id]`：分析结果页
+- `/flashcards/[id]`：闪卡页
+- `/summary/[id]`：单篇总结页
+- `/summaries`：周总结列表页
+- `/summaries/weekly/[id]`：周总结详情页
 - `/profile`：个人中心
 
-## 主要接口
+## 环境变量
 
-- `POST /api/auth/register`：注册用户
-- `POST /api/auth/login`：登录并写入 Cookie
-- `POST /api/auth/logout`：退出登录
-- `GET /api/dashboard`：仪表盘数据
-- `POST /api/documents/upload`：上传文件并触发分析
-- `POST /api/documents/[id]/retry`：重新分析
-- `GET /api/result/[id]`：获取分析结果
-- `GET /api/flashcards/[id]`：获取闪卡
-- `GET /api/summary/[id]`：获取总结
-- `GET /api/history`：获取历史记录
-- `DELETE /api/history/[id]`：删除历史记录
-- `GET /api/profile`：获取个人中心数据
+请在项目根目录创建 `.env` 文件，并根据本地环境填写以下内容：
+
+```env
+DATABASE_URL="mysql://root:你的密码@localhost:3306/studyflow"
+JWT_SECRET="一串足够长的随机字符串"
+
+DASHSCOPE_API_KEY="你的 API Key"
+DASHSCOPE_BASE_URL=
+
+TONGYI_VISION_MODEL=
+TONGYI_DOC_MODEL=
+
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+说明：
+
+- `DATABASE_URL`：MySQL 连接地址
+- `JWT_SECRET`：JWT 签名密钥
+- `DASHSCOPE_API_KEY`：通义千问 / 百炼 API Key
+- `DASHSCOPE_BASE_URL`：百炼兼容 OpenAI 的接口地址
+- `TONGYI_VISION_MODEL`：图片分析模型
+- `TONGYI_DOC_MODEL`：PDF / 长文档分析模型
+- `NEXT_PUBLIC_APP_URL`：项目运行地址
 
 ## 本地运行
 
@@ -140,35 +101,32 @@ studyflow-ai
 pnpm install
 ```
 
-### 2. 配置环境变量
+### 2. 配置数据库
 
-在项目根目录创建 `.env`：
+确保本地 MySQL 中已创建数据库：
 
-```bash
-DATABASE_URL="mysql://root:password@localhost:3306/studyflow_ai"
-JWT_SECRET="replace-with-a-strong-secret"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```sql
+CREATE DATABASE studyflow;
 ```
 
-### 3. 生成 Prisma Client
-
-```bash
-pnpm prisma generate
-```
-
-### 4. 执行数据库迁移
+### 3. 执行 Prisma 迁移
 
 ```bash
 pnpm prisma migrate dev
+pnpm prisma generate
 ```
 
-### 5. 启动开发环境
+### 4. 启动项目
 
 ```bash
 pnpm dev
 ```
 
-启动后访问 [http://localhost:3000](http://localhost:3000)。
+启动后访问：
+
+```txt
+http://localhost:3000
+```
 
 ## 常用命令
 
@@ -177,55 +135,65 @@ pnpm dev
 pnpm build
 pnpm start
 pnpm lint
-pnpm prisma studio
+pnpm prisma migrate dev
+pnpm prisma generate
 ```
 
-## 当前项目评估
+## 数据流说明
 
-从现有代码来看，这个仓库已经不是空壳，而是一个具备完整学习资料流转雏形的全栈 MVP：
+项目的核心处理流程如下：
 
-- 页面层已经覆盖核心学习流程
-- 数据库模型能支撑“上传 -> 分析 -> 总结 -> 闪卡 -> 历史”链路
-- API 设计已经接近真实产品结构
+1. 用户登录系统
+2. 上传 PDF 或图片资料
+3. 系统保存文件并创建文档记录
+4. 后端触发资料分析
+5. 生成分析结果、闪卡和总结
+6. 用户在结果页、闪卡页和总结页查看内容
 
-但它还没有达到可稳定交付的状态，主要原因是：
+## 当前项目状态
 
-- 鉴权实现不统一，部分接口仍依赖 `mockUserId`
-- 分析服务仍是本地模拟数据
-- 首页和部分体验细节尚未产品化
-- 缺少测试、错误恢复机制和后台任务体系
+当前项目已经完成以下闭环：
 
-## 已知问题与改进建议
+- 用户注册 / 登录 / 退出
+- 文件上传
+- 文档分析
+- 分析结果查看
+- 闪卡查看
+- 单篇总结查看
+- 周总结查看
+- 历史记录删除与重试
 
-### 高优先级
+项目当前更偏向一个可继续扩展的 MVP，后续仍可继续优化：
 
-- 统一认证方案，只保留一种服务端可信鉴权方式
-- 去掉所有 `mockUserId`，改为基于当前用户查询数据
-- 将上传后的分析改造成后台任务，避免请求阻塞
-- 修复 TypeScript 构建错误并补齐基础静态检查
+- 提升真实 AI 输出质量
+- 增强 PDF / 图片识别效果
+- 增加更多学习复盘能力
+- 完善测试与部署文档
 
-### 中优先级
+## 项目适用场景
 
-- 用真实 OCR / LLM 服务替换占位分析逻辑
-- 增加首页落地页和产品介绍页
-- 增加环境变量示例文件，如 `.env.example`
-- 将 `public/uploads` 改造为对象存储或独立文件服务
+StudyFlow AI 适合作为：
 
-### 低优先级
+- 课程设计项目
+- 毕业设计前期原型
+- AI 学习辅助系统作品集项目
+- 前后端全栈实践项目
 
-- 补充单元测试和接口测试
-- 完善角色体系、学习目标、标签体系
-- 增强结果页和闪卡页的交互体验
+## 目录结构
 
-## 下一步建议
-
-如果继续迭代这个项目，建议优先按下面顺序推进：
-
-1. 修复认证与构建问题，确保项目可稳定启动和打包。
-2. 接入真实文档提取与分析服务。
-3. 将同步分析改为异步任务队列。
-4. 补充测试、日志和部署说明。
+```txt
+src/
+  app/                    页面与 API 路由
+  components/             页面组件
+  data/                   数据获取与类型定义
+  lib/                    工具函数、鉴权、Prisma、AI 服务
+  lib/services/           业务服务，如文档分析
+prisma/
+  schema.prisma           Prisma 数据模型
+  migrations/             数据库迁移记录
+public/uploads/           用户上传文件
+```
 
 ## 说明
 
-当前 README 已按仓库现状编写，重点反映“真实完成度”和“当前限制”。如果你接下来要继续推进这个项目，建议优先把认证链路、首页和异步分析三部分做实。它们会决定这个仓库是停留在课程作业级别，还是进入可演示、可继续迭代的产品级原型。
+如果外部 AI 服务状态异常，项目会自动进入本地兜底分析模式，以保证主要功能链路仍可运行。这种设计主要用于开发、联调和课堂展示，不影响后续继续切回真实 AI 服务。

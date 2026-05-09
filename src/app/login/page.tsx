@@ -52,6 +52,7 @@ export default function LoginPage() {
                 return;
             }
 
+            // 兼容现有客户端鉴权逻辑，写入本地后再跳转控制台。
             setToken(data.token);
             router.push("/dashboard");
         } catch {
