@@ -25,11 +25,13 @@ export default async function AppLayout({
   const flashcardsHref = flashcardsQuickItem?.href || "/history";
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen">
       <Sidebar summaryHref={summaryHref} flashcardsHref={flashcardsHref} />
-      <div className="flex-1 flex flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="p-6">{children}</main>
+        <main className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );

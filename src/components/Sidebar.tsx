@@ -25,9 +25,15 @@ export default function Sidebar({
   ];
 
   return (
-    <aside className="h-screen w-60 border-r bg-white px-4 py-6">
-      <div className="mb-6 text-xl font-semibold">StudyFlow AI</div>
-      <nav className="space-y-2 text-sm">
+    <aside className="hidden h-screen w-72 shrink-0 border-r border-white/40 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 px-5 py-6 text-white shadow-xl lg:block">
+      <div className="mb-8 space-y-2">
+        <div className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs tracking-wide text-white/90">
+          StudyFlow Workspace
+        </div>
+        <div className="text-2xl font-semibold tracking-tight">StudyFlow AI</div>
+        <p className="text-sm text-indigo-100/80">上传资料，生成分析，持续复习。</p>
+      </div>
+      <nav className="space-y-1.5 text-sm">
         {navItems.map((item) => {
           // 动态入口使用 startsWith 匹配，保证不同 id 页面也能高亮。
           const active =
@@ -43,8 +49,10 @@ export default function Sidebar({
             <Link
               key={`${item.name}-${item.href}`}
               href={item.href}
-              className={`block rounded px-3 py-2 ${
-                active ? "bg-slate-100 font-medium" : "hover:bg-slate-100"
+              className={`block rounded-xl px-3 py-2.5 transition ${
+                active
+                  ? "bg-white/22 font-medium text-white shadow-sm"
+                  : "text-indigo-100/90 hover:bg-white/10 hover:text-white"
               }`}
             >
               {item.name}
@@ -52,6 +60,9 @@ export default function Sidebar({
           );
         })}
       </nav>
+      <div className="mt-8 rounded-xl border border-white/15 bg-white/10 p-3 text-xs text-indigo-100/85">
+        Tips: 先上传资料，再从结果页进入闪卡和总结，体验会更连贯。
+      </div>
     </aside>
   );
 }

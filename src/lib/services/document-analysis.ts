@@ -22,6 +22,17 @@ type AIAnalysisResult = {
   flashcards: AIFlashcard[];
 };
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  return String(error ?? "");
+}
+
+function getErrorStatusCode(error: unknown) {
+  if (!error || typeof error !== "object") return null;
+  const record = error as Record<string, unknown>;
+  return typeof record.status === "number" ? record.status : null;
+}
+
 function createFallbackAnalysis(
   filename: string,
   fileType: string | null
@@ -78,15 +89,21 @@ function createFallbackAnalysis(
 }
 
 function shouldFallbackToLocalAnalysis(error: unknown) {
-  const message =
-    error instanceof Error ? error.message : String(error ?? "");
+  const message = getErrorMessage(error).toLowerCase();
+  const statusCode = getErrorStatusCode(error);
 
   // 仅对已知服务侧/账号侧异常触发降级，未知错误仍按失败抛出。
   return (
-    message.includes("Access denied") ||
+    statusCode === 401 ||
+    statusCode === 403 ||
+    statusCode === 429 ||
+    message.includes("access denied") ||
     message.includes("good standing") ||
     message.includes("overdue-payment") ||
-    message.includes("insufficient_quota")
+    message.includes("insufficient_quota") ||
+    message.includes("request was blocked") ||
+    message.includes("forbidden") ||
+    message.includes("quota")
   );
 }
 
@@ -283,8 +300,7 @@ async function analyzeDocumentWithTongyi(
       return parseModelJson(text);
     } catch (error) {
       lastError = error;
-      const message =
-        error instanceof Error ? error.message : String(error);
+      const message = getErrorMessage(error);
 
       // 文件解析在服务端异步执行，先轮询几轮再决定失败。
       if (!message.includes("File parsing in progress")) {
@@ -485,7 +501,7 @@ export async function processDocumentAnalysis(documentId: number) {
       where: { id: documentId },
       data: {
         status: "failed",
-        errorMessage: (error as Error).message || "分析失败",
+        errorMessage: getErrorMessage(error) || "分析失败",
       },
     });
   }

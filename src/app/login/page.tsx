@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { setToken } from "@/lib/auth";
+import Link from "next/link";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -63,10 +64,19 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-            <div className="w-full max-w-sm rounded-xl border bg-white p-6 shadow-sm">
-                <h1 className="text-2xl font-semibold">登录</h1>
-                <p className="mt-2 text-sm text-slate-500">欢迎回来，继续学习。</p>
+        <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8">
+            <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-100 via-sky-50 to-emerald-100" />
+            <div className="absolute -left-24 -top-24 -z-10 h-64 w-64 rounded-full bg-indigo-300/35 blur-3xl" />
+            <div className="absolute -bottom-20 -right-20 -z-10 h-72 w-72 rounded-full bg-emerald-300/30 blur-3xl" />
+
+            <div className="w-full max-w-sm rounded-2xl border border-white/70 bg-white/88 p-6 shadow-xl backdrop-blur">
+                <div className="mb-5">
+                    <div className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+                        StudyFlow AI
+                    </div>
+                    <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">登录</h1>
+                    <p className="mt-2 text-sm text-slate-500">欢迎回来，继续你的学习流程。</p>
+                </div>
 
                 <div className="mt-6 space-y-4">
                     <div>
@@ -74,7 +84,7 @@ export default function LoginPage() {
                         <input
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="mt-2 w-full rounded-md border px-3 py-2 text-sm"
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                             placeholder="请输入邮箱"
                         />
                     </div>
@@ -85,7 +95,7 @@ export default function LoginPage() {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="mt-2 w-full rounded-md border px-3 py-2 text-sm"
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                             placeholder="请输入密码"
                         />
                     </div>
@@ -99,9 +109,7 @@ export default function LoginPage() {
 
                 <div className="mt-4 text-sm text-slate-500">
                     还没有账号？
-                    <a className="ml-1 text-slate-900 underline" href="/register">
-                        去注册
-                    </a>
+                    <Link className="ml-1 text-slate-900 underline" href="/register">去注册</Link>
                 </div>
             </div>
         </div>
