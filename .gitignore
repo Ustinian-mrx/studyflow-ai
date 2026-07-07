@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# uploads - user uploaded files
+/public/uploads/
+
+# mimocode working directory
+.mimocode/
+
+# codex temporary files
+.codex_tmp_*/

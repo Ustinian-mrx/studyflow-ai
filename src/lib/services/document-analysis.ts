@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import * as pdfjsLib from "pdfjs-dist";
 import { prisma } from "@/lib/prisma";
 import {
   openai,
@@ -96,6 +97,7 @@ function shouldFallbackToLocalAnalysis(error: unknown) {
   return (
     statusCode === 401 ||
     statusCode === 403 ||
+    statusCode === 404 ||
     statusCode === 429 ||
     message.includes("access denied") ||
     message.includes("good standing") ||
@@ -103,7 +105,8 @@ function shouldFallbackToLocalAnalysis(error: unknown) {
     message.includes("insufficient_quota") ||
     message.includes("request was blocked") ||
     message.includes("forbidden") ||
-    message.includes("quota")
+    message.includes("quota") ||
+    message.includes("not found")
   );
 }
 
@@ -250,72 +253,55 @@ async function analyzeImageWithTongyi(
   return parseModelJson(text);
 }
 
-async function wait(ms: number) {
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function analyzeDocumentWithTongyi(
   absoluteFilePath: string,
-  filename: string,
-  mimeType: string
+  filename: string
 ): Promise<AIAnalysisResult> {
   const buffer = await fs.readFile(absoluteFilePath);
 
-  const fileObject = await openai.files.create({
-    file: new File([buffer], filename, { type: mimeType }),
-    // 百炼支持 file-extract，但 OpenAI SDK 类型未收录，需显式断言。
-    purpose: "file-extract" as never,
-  });
+  // 使用 pdfjs-dist 提取 PDF 文本内容
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let extractedText = "";
 
-  let lastError: unknown = null;
-
-  for (let i = 0; i < 8; i += 1) {
-    try {
-      const completion = await openai.chat.completions.create({
-        model: TONGYI_DOC_MODEL,
-        messages: [
-          {
-            role: "system",
-            content:
-              "你是学习资料分析助手。你必须只输出合法 JSON，不要输出 markdown、解释或额外文字。",
-          },
-          {
-            role: "system",
-            content: `fileid://${fileObject.id}`,
-          },
-          {
-            role: "user",
-            content: buildAnalysisPrompt(filename),
-          },
-        ],
-        temperature: 0.2,
-      });
-
-      const text = completion.choices[0]?.message?.content?.trim();
-
-      if (!text) {
-        throw new Error("通义千问未返回有效内容");
-      }
-
-      return parseModelJson(text);
-    } catch (error) {
-      lastError = error;
-      const message = getErrorMessage(error);
-
-      // 文件解析在服务端异步执行，先轮询几轮再决定失败。
-      if (!message.includes("File parsing in progress")) {
-        throw error;
-      }
-
-      await wait(2000);
-    }
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items
+      .map((item) => ("str" in item ? item.str : ""))
+      .join(" ");
+    extractedText += pageText + "\n";
   }
 
-  throw new Error(
-    lastError instanceof Error
-      ? lastError.message
-      : "文档解析超时，请稍后重试"
-  );
+  if (!extractedText || extractedText.trim().length === 0) {
+    throw new Error("PDF 文件无法提取文本内容，可能是扫描件或纯图片 PDF");
+  }
+
+  // 截取前 8000 字符，避免超出模型上下文限制
+  const truncatedText = extractedText.substring(0, 8000);
+
+  const completion = await openai.chat.completions.create({
+    model: TONGYI_DOC_MODEL,
+    messages: [
+      {
+        role: "system",
+        content:
+          "你是学习资料分析助手。你必须只输出合法 JSON，不要输出 markdown、解释或额外文字。",
+      },
+      {
+        role: "user",
+        content: `以下是学习资料《${filename}》的文本内容：\n\n${truncatedText}\n\n${buildAnalysisPrompt(filename)}`,
+      },
+    ],
+    temperature: 0.2,
+  });
+
+  const text = completion.choices[0]?.message?.content?.trim();
+
+  if (!text) {
+    throw new Error("模型未返回有效内容");
+  }
+
+  return parseModelJson(text);
 }
 
 async function analyzeFile(
@@ -333,11 +319,7 @@ async function analyzeFile(
   }
 
   if (fileType === "application/pdf") {
-    return analyzeDocumentWithTongyi(
-      absoluteFilePath,
-      filename,
-      "application/pdf"
-    );
+    return analyzeDocumentWithTongyi(absoluteFilePath, filename);
   }
 
   throw new Error("当前仅支持 PDF、PNG、JPG、JPEG、WEBP 文件分析");

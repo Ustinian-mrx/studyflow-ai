@@ -17,7 +17,8 @@ export default function RegisterPage() {
     const [success, setSuccess] = useState("");
     const [loading, setLoading] = useState(false);
 
-    async function handleRegister() {
+    async function handleRegister(e?: React.FormEvent) {
+        e?.preventDefault();
         setError("");
         setSuccess("");
 
@@ -86,7 +87,7 @@ export default function RegisterPage() {
                     <p className="mt-2 text-sm text-slate-500">创建新账号，开始 AI 学习整理。</p>
                 </div>
 
-                <div className="mt-6 space-y-4">
+                <form onSubmit={handleRegister} className="mt-6 space-y-4">
                     <div>
                         <label className="text-sm">姓名</label>
                         <input
@@ -144,10 +145,10 @@ export default function RegisterPage() {
                         <div className="text-sm text-emerald-600">{success}</div>
                     ) : null}
 
-                    <Button className="w-full" onClick={handleRegister} disabled={loading}>
+                    <Button type="submit" className="w-full" disabled={loading}>
                         {loading ? "注册中..." : "注册"}
                     </Button>
-                </div>
+                </form>
 
                 <div className="mt-4 text-sm text-slate-500">
                     已有账号？

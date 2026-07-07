@@ -14,7 +14,8 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    async function handleLogin() {
+    async function handleLogin(e?: React.FormEvent) {
+        e?.preventDefault();
         setError("");
 
         if (!email.trim()) {
@@ -78,7 +79,7 @@ export default function LoginPage() {
                     <p className="mt-2 text-sm text-slate-500">欢迎回来，继续你的学习流程。</p>
                 </div>
 
-                <div className="mt-6 space-y-4">
+                <form onSubmit={handleLogin} className="mt-6 space-y-4">
                     <div>
                         <label className="text-sm">邮箱</label>
                         <input
@@ -102,10 +103,10 @@ export default function LoginPage() {
 
                     {error ? <div className="text-sm text-red-500">{error}</div> : null}
 
-                    <Button className="w-full" onClick={handleLogin} disabled={loading}>
+                    <Button type="submit" className="w-full" disabled={loading}>
                         {loading ? "登录中..." : "登录"}
                     </Button>
-                </div>
+                </form>
 
                 <div className="mt-4 text-sm text-slate-500">
                     还没有账号？
