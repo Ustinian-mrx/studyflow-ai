@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { processingSteps } from "./mock";
 import type {
   DashboardData,
+  MistakesPageData,
   ProfileData,
   SummaryData,
   WeeklySummaryDetail,
@@ -277,4 +278,44 @@ export async function getWeeklySummaryDetail(
   }
 
   return res.json();
+}
+
+export async function getMistakesPageData(): Promise<MistakesPageData> {
+  const headers = await getAuthHeaders();
+
+  if (!headers) {
+    return {
+      isAuthenticated: false,
+      items: [],
+      stats: { total: 0, mastered: 0, unmastered: 0, byDocument: [], byTag: [], byWeek: [], bySource: [] },
+      tags: [],
+      documents: [],
+    };
+  }
+
+  const [mistakesRes, statsRes] = await Promise.all([
+    fetch(`${BASE_URL}/api/mistakes`, { cache: "no-store", headers }),
+    fetch(`${BASE_URL}/api/mistakes/stats`, { cache: "no-store", headers }),
+  ]);
+
+  if (!mistakesRes.ok) {
+    return {
+      isAuthenticated: true,
+      items: [],
+      stats: { total: 0, mastered: 0, unmastered: 0, byDocument: [], byTag: [], byWeek: [], bySource: [] },
+      tags: [],
+      documents: [],
+    };
+  }
+
+  const mistakesData = await mistakesRes.json();
+  const statsData = statsRes.ok ? await statsRes.json() : { total: 0, mastered: 0, unmastered: 0, byDocument: [], byTag: [], byWeek: [], bySource: [] };
+
+  return {
+    isAuthenticated: true,
+    items: mistakesData.items ?? [],
+    stats: statsData,
+    tags: mistakesData.tags ?? [],
+    documents: mistakesData.documents ?? [],
+  };
 }

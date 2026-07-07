@@ -21,6 +21,7 @@ export default function Sidebar({
     { name: "闪卡", href: flashcardsHref },
     { name: "单篇总结", href: summaryHref },
     { name: "周总结", href: "/summaries" },
+    { name: "错题集", href: "/mistakes" },
     { name: "个人中心", href: "/profile" },
   ];
 
@@ -43,7 +44,9 @@ export default function Sidebar({
                 ? pathname.startsWith("/summary")
                 : item.name === "周总结"
                   ? pathname.startsWith("/summaries")
-                  : pathname.startsWith(item.href);
+                  : item.name === "错题集"
+                    ? pathname.startsWith("/mistakes")
+                    : pathname.startsWith(item.href);
 
           return (
             <Link

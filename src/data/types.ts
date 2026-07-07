@@ -128,3 +128,38 @@ export type WeeklySummaryDetail = {
   suggestions: string[];
   createdAt: string;
 };
+
+// 错题集条目。
+export type MistakeItemData = {
+  id: number;
+  content: string;
+  answer?: string;
+  source: "ai_difficulty" | "wrong_answer";
+  documentId?: number;
+  documentName?: string;
+  tags: string[];
+  correctCount: number;
+  wrongCount: number;
+  mastered: boolean;
+  createdAt: string;
+};
+
+// 错题集统计数据。
+export type MistakeStats = {
+  total: number;
+  mastered: number;
+  unmastered: number;
+  byDocument: { document: string; count: number; masteryRate: number }[];
+  byTag: { tag: string; count: number; masteryRate: number }[];
+  byWeek: { week: string; newCount: number; totalCount: number }[];
+  bySource: { source: string; count: number }[];
+};
+
+// 错题集页面数据。
+export type MistakesPageData = {
+  isAuthenticated: boolean;
+  items: MistakeItemData[];
+  stats: MistakeStats;
+  tags: string[];
+  documents: { id: number; name: string }[];
+};
